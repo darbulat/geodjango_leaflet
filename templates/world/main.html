@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>My Leaflet Map</title>
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <style type="text/css">
+      #map {
+        height: 500px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+
+    <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map', {doubleClickZoom: false}).locate({setView: true, maxZoom: 12});
+      var points = []
+        map.on('click', function(e){
+            var marker = new L.marker(e.latlng).addTo(map);
+            points.push([e.latlng.lng, e.latlng.lat])
+            document.getElementById('points').value = JSON.stringify(points)
+        });
+
+      L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+    </script>
+
+  <div>
+    <form action={% url 'search' %} method="post">
+    {% csrf_token %}
+    <input id="radius" name="radius" type="number" class="query-search" value=100 size="5">
+    <input id="from_date" name="from_date" type="date" class="query-search" placeholder="Дата начала"> -
+    <input id="to_date" name="to_date" type="date" class="query-search" placeholder="Дата окончания">
+    <input id="points" name="points" type="hidden"  class="query-search" >
+    <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
+    </form>
+
+</div>
+{% for image in images %}
+    {{ image.id_out }}.<a target="_blank" rel="noopener noreferrer" href={{ image.link }}> {{ image.link }}</a><br>
+{% endfor %}
+
+  </body>
+
+</html>
