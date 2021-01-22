@@ -18,38 +18,36 @@ html, body, #map {
 
     <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
     <script>
-        var map = L.map('map', {doubleClickZoom: false}).locate({setView: true, maxZoom: 12});
-      var points = []
-        map.on('click', function(e){
-            var marker = new L.marker(e.latlng).addTo(map);
-            points.push([e.latlng.lng, e.latlng.lat])
-            document.getElementById('points').value = JSON.stringify(points)
-        });
+    var map = L.map('map', {doubleClickZoom: false}).locate({setView: true, maxZoom: 12});
+    var points = []
+    map.on('click', function(e){
+        var marker = new L.marker(e.latlng).addTo(map);
+        points.push([e.latlng.lng, e.latlng.lat])
+        document.getElementById('points').value = JSON.stringify(points)
+    });
 
-      L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map);
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-map.locate({setView: true, maxZoom: 16});
+    map.locate({setView: true, maxZoom: 16});
 
-function onLocationFound(e) {
-    var radius = e.accuracy;
-
-    L.marker(e.latlng).addTo(map)
-        .bindPopup("You are within " + radius + " meters from this point").openPopup();
-
-    L.circle(e.latlng, radius).addTo(map);
-}
+    function onLocationFound(e) {
+        L.marker(e.latlng).addTo(map)
+        debugger
+        points.push([e.latlng.lng, e.latlng.lat])
+        document.getElementById('points').value = JSON.stringify(points)
+   }
 
 
-map.on('locationfound', onLocationFound);
+    map.on('locationfound', onLocationFound);
 
 
-function onLocationError(e) {
-    alert(e.message);
-}
+    function onLocationError(e) {
+        alert(e.message);
+    }
 
-map.on('locationerror', onLocationError);
+    map.on('locationerror', onLocationError);
 
 
     </script>

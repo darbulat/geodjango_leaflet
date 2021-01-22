@@ -19,7 +19,7 @@ from django.urls import path, include
 from world import views
 
 urlpatterns = [
-    path('', views.main),
+    path('', views.main, name='search'),
     path('admin/', admin.site.urls),
     path('gis/', include('world.urls'))
 ]

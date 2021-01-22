@@ -6,6 +6,7 @@ import json
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import Point, MultiPolygon
 from django.http import HttpResponse
+from django.shortcuts import render
 from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
 
@@ -29,7 +30,6 @@ def upload_points(request):
     return HttpResponse(True)
 
 
-@csrf_exempt
 def get_points(request):
     from_date = datetime.date.fromisoformat(request.POST.get('from_date'))
     to_date = datetime.date.fromisoformat(request.POST.get('to_date'))
@@ -54,8 +54,7 @@ def get_points(request):
         } for image in images
     ])
     context = {"images": images}
-    template = loader.get_template('world/main.html')
-    return HttpResponse(template.render(context, request))
+    return render(request, 'world/main.html', context)
 
 
 @login_required(login_url='/admin')
@@ -66,5 +65,7 @@ def index(request):
 
 @csrf_exempt
 def main(request):
-    template = loader.get_template('world/main.html')
-    return HttpResponse(template.render({}, request))
+    if request.method == 'GET':
+        return render(request, 'world/main.html', {})
+    if request.method == 'POST':
+        return get_points(request)
