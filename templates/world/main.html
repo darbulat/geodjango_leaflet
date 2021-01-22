@@ -66,11 +66,11 @@ html, body, #map {
     <form action={% url 'search' %} method="post">
     {% csrf_token %}
     <label for="radius">Радиус:</label>
-    <input id="radius" name="radius" type="number" class="query-search" value=100 size="5">
+    <input id="radius" name="radius" type="number" class="query-search" value=100 size="5"><br>
     <label for="from_date">Начало:</label>
-    <input id="from_date" name="from_date" type="date" class="query-search" placeholder="Дата начала">
+    <input id="from_date" name="from_date" type="date" class="query-search" placeholder="Дата начала"><br>
     <label for="to_date">Конец:</label>
-    <input id="to_date" name="to_date" type="date" class="query-search" placeholder="Дата окончания">
+    <input id="to_date" name="to_date" type="date" class="query-search" placeholder="Дата окончания"><br>
     <input id="points" name="points" type="hidden"  class="query-search" >
     <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
     </form>
