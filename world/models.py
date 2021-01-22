@@ -7,3 +7,4 @@ class Image(models.Model):
     point = models.PointField()
     date = models.DateField()
     link = models.CharField(max_length=200)
+    description = models.TextField(null=True)

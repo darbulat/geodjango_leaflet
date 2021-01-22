@@ -20,6 +20,7 @@ class Migration(migrations.Migration):
                 ('point', django.contrib.gis.db.models.fields.PointField(srid=4326)),
                 ('date', models.DateField()),
                 ('link', models.CharField(max_length=200)),
+                ('description', models.TextField()),
             ],
         ),
     ]

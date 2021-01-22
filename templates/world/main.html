@@ -65,8 +65,11 @@ html, body, #map {
   <div>
     <form action={% url 'search' %} method="post">
     {% csrf_token %}
+    <label for="radius">Радиус:</label>
     <input id="radius" name="radius" type="number" class="query-search" value=100 size="5">
-    <input id="from_date" name="from_date" type="date" class="query-search" placeholder="Дата начала"> -
+    <label for="from_date">Начало:</label>
+    <input id="from_date" name="from_date" type="date" class="query-search" placeholder="Дата начала">
+    <label for="to_date">Конец:</label>
     <input id="to_date" name="to_date" type="date" class="query-search" placeholder="Дата окончания">
     <input id="points" name="points" type="hidden"  class="query-search" >
     <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
@@ -74,11 +77,11 @@ html, body, #map {
 
 </div>
 {% for image in images %}
-    {{ image.id_out }}.
+    {{ image.id_out }}.     {{ image.description }}
     <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
     <img src={{ image.link }} alt="Forest">
     </a><br>
-    {{ image.description }}
+
 {% endfor %}
 
   </body>

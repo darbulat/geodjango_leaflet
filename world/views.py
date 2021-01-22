@@ -5,29 +5,36 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import Point, MultiPolygon
-from django.http import HttpResponse
 from django.shortcuts import render
-from django.template import loader
 from django.views.decorators.csrf import csrf_exempt
 
+from world.helpers import BulkCreateManager
 from world.models import Image
 
 
 def upload_points(request):
-    if request.method == 'POST' and request.FILES['csv_file']:
+    if request.FILES['csv_file']:
+
         file = request.FILES['csv_file']
         csv_file = file.read().decode('utf-8')
         reader = csv.reader(io.StringIO(csv_file), delimiter=' ', quotechar='|')
-        for id_out, long, lat, date, link in reader:
+        Image.objects.all().delete()
+        bulk_mgr = BulkCreateManager(chunk_size=20)
+        for id_out, long, lat, date, link, description in reader:
             try:
                 date = datetime.date.fromisoformat(date)
                 point = Point(x=float(long), y=float(lat))
-                image = Image(id_out=id_out, point=point, date=date, link=link)
-                image.save()
+                bulk_mgr.add(Image(id_out=id_out, point=point,
+                                   date=date, link=link,
+                                   description=description))
+
             except ValueError:
                 pass
 
-    return HttpResponse(True)
+        bulk_mgr.done()
+        return render(
+            request, 'world/index.html', {'message': 'Данные успешно загружены'}
+        )
 
 
 def get_points(request):
@@ -43,14 +50,15 @@ def get_points(request):
     images = Image.objects.filter(
         date__range=[from_date, to_date],
         point__intersects=mp_circles
-    ).values('date', 'link', 'point', 'id_out')
+    ).values()
     images = list([
         {
             'id_out': image['id_out'],
             'x': image['point'].x,
             'y': image['point'].y,
             'date': str(image['date']),
-            'link': image['link']
+            'link': image['link'],
+            'description': image['description'],
         } for image in images
     ])
     context = {"images": images}
@@ -59,8 +67,10 @@ def get_points(request):
 
 @login_required(login_url='/admin')
 def index(request):
-    template = loader.get_template('world/index.html')
-    return HttpResponse(template.render({}, request))
+    if request.method == 'GET':
+        return render(request, 'world/index.html', {})
+    if request.method == 'POST':
+        return upload_points(request)
 
 
 @csrf_exempt
