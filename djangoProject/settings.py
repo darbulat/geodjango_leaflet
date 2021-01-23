@@ -15,7 +15,7 @@ import environ
 
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, False),
+    DEBUG=(bool, True),
     DB_NAME=(str, 'postgres'),
     DB_USER=(str, 'postgres'),
     DB_PASSWORD=(str, 'password'),

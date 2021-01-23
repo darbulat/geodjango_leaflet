@@ -11,6 +11,8 @@ from django.views.decorators.csrf import csrf_exempt
 from world.helpers import BulkCreateManager
 from world.models import Image
 
+RATIO = 1000
+
 
 def upload_points(request):
     if request.FILES['csv_file']:
@@ -38,15 +40,28 @@ def upload_points(request):
 
 
 def get_points(request):
-    from_date = datetime.date.fromisoformat(request.POST.get('from_date'))
-    to_date = datetime.date.fromisoformat(request.POST.get('to_date'))
-    radius = int(request.POST.get('radius')) / 1000
-    points_list = json.loads(request.POST.get('points'))
-    circles = [
-        Point(x=long, y=lat).buffer(radius)
-        for long, lat in points_list
-    ]
-    mp_circles = MultiPolygon(circles)
+    if from_date_str := request.POST.get('from_date'):
+        from_date = datetime.date.fromisoformat(from_date_str)
+    else:
+        from_date = datetime.date.today() - datetime.timedelta(days=2)
+    if to_date_str := request.POST.get('to_date'):
+        to_date = datetime.date.fromisoformat(to_date_str)
+    else:
+        to_date = datetime.date.today() + datetime.timedelta(days=1)
+    if radius := request.POST.get('radius'):
+        radius = int(radius) / RATIO
+    else:
+        radius = 100 / RATIO
+    points_list = []
+    if request.POST.get('points'):
+        points_list = json.loads(request.POST.get('points'))
+        circles = [
+            Point(x=long, y=lat).buffer(radius)
+            for long, lat in points_list
+        ]
+        mp_circles = MultiPolygon(circles)
+    else:
+        mp_circles = Point(x=0, y=0)
     images = Image.objects.filter(
         date__range=[from_date, to_date],
         point__intersects=mp_circles
@@ -61,7 +76,13 @@ def get_points(request):
             'description': image['description'],
         } for image in images
     ])
-    context = {"images": images}
+    context = {
+        "images": images,
+        'from_date': from_date_str,
+        'to_date': to_date_str,
+        'radius': int(radius * RATIO),
+        'points': points_list,
+    }
     return render(request, 'world/main.html', context)
 
 
@@ -76,6 +97,6 @@ def index(request):
 @csrf_exempt
 def main(request):
     if request.method == 'GET':
-        return render(request, 'world/main.html', {})
+        return render(request, 'world/main.html', dict(images=[]))
     if request.method == 'POST':
         return get_points(request)

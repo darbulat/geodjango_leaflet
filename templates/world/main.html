@@ -5,20 +5,20 @@
     <title>My Leaflet Map</title>
     <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
     <style type="text/css">
-img {
-  border: 1px solid #ddd; /* Gray border */
-  border-radius: 4px;  /* Rounded border */
-  padding: 5px; /* Some padding */
-  width: 150px; /* Set a small width */
-}
+        img {
+          border: 1px solid #ddd; /* Gray border */
+          border-radius: 4px;  /* Rounded border */
+          padding: 5px; /* Some padding */
+          width: 150px; /* Set a small width */
+        }
 
-/* Add a hover effect (blue shadow) */
-img:hover {
-  box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
-}
-html, body, #map {
-    height: 80%;
-}
+        /* Add a hover effect (blue shadow) */
+        img:hover {
+          box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+        }
+        html, body, #map {
+            height: 80%;
+        }
     </style>
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   </head>
@@ -28,8 +28,9 @@ html, body, #map {
 
     <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
     <script>
-    var map = L.map('map', {doubleClickZoom: false}).locate({setView: true, maxZoom: 12});
+    var map = L.map('map', {doubleClickZoom: false});
     var points = []
+    var images = {{ images | safe }}
     map.on('click', function(e){
         var marker = new L.marker(e.latlng).addTo(map);
         points.push([e.latlng.lng, e.latlng.lat])
@@ -39,25 +40,19 @@ html, body, #map {
     L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
+    debugger
 
-    map.locate({setView: true, maxZoom: 16});
-
-    function onLocationFound(e) {
-        L.marker(e.latlng).addTo(map)
-        debugger
-        points.push([e.latlng.lng, e.latlng.lat])
-        document.getElementById('points').value = JSON.stringify(points)
-   }
-
-
-    map.on('locationfound', onLocationFound);
-
-
-    function onLocationError(e) {
-        alert(e.message);
+    for (image of images) {
+        var marker = L.marker([image.y, image.x]).addTo(map);
+        marker.bindPopup(
+                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
+        ).openPopup();
     }
-
-    map.on('locationerror', onLocationError);
+    if (images.length > 0) {
+        map.setView([image.y, image.x], 13);
+    } else {
+        map.locate({setView: true, maxZoom: 13});
+    }
 
 
     </script>
@@ -66,24 +61,41 @@ html, body, #map {
     <form action={% url 'search' %} method="post">
     {% csrf_token %}
     <label for="radius">Радиус:</label>
+        {% if radius %}
+    <input id="radius" name="radius" type="number" class="query-search" value={{ radius }} size="5"><br>
+        {% else %}
     <input id="radius" name="radius" type="number" class="query-search" value=100 size="5"><br>
+        {% endif %}
     <label for="from_date">Начало:</label>
+    {% if from_date %}
+    <input id="from_date" name="from_date" type="date" value={{ from_date }} class="query-search" placeholder="Дата начала"><br>
+    {% else %}
     <input id="from_date" name="from_date" type="date" class="query-search" placeholder="Дата начала"><br>
+    {% endif %}
     <label for="to_date">Конец:</label>
+    {% if to_date %}
+    <input id="to_date" name="to_date" type="date" value={{ to_date }} class="query-search" placeholder="Дата окончания"><br>
+    {% else %}
     <input id="to_date" name="to_date" type="date" class="query-search" placeholder="Дата окончания"><br>
+    {% endif %}
     <input id="points" name="points" type="hidden"  class="query-search" >
     <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
     </form>
 
 </div>
+<br>
+{% if not images %}
+    <b>Объектов не найдено</b>
+{% else %}
+    <b>Найдено {{ images | length }} объектов</b>
+    <br>
 {% for image in images %}
-    {{ image.id_out }}.     {{ image.description }}
     <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
-    <img src={{ image.link }} alt="Forest">
+    <img src={{ image.link }} alt="Forest"><br>
+    {{ image.description }}
     </a><br>
-
 {% endfor %}
-
+{% endif %}
   </body>
 
 </html>
