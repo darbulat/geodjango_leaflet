@@ -2,7 +2,7 @@
 <html>
 
   <head>
-    <title>My Leaflet Map</title>
+    <title>Lost & Found</title>
     <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
     <style type="text/css">
         img {
@@ -84,10 +84,7 @@
 
 </div>
 <br>
-{% if not images %}
-    <b>Объектов не найдено</b>
-{% else %}
-    <b>Найдено {{ images | length }} объектов</b>
+<b>{{ message }}</b>
     <br>
 {% for image in images %}
     <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
@@ -95,7 +92,6 @@
     {{ image.description }}
     </a><br>
 {% endfor %}
-{% endif %}
   </body>
 
 </html>

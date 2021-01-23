@@ -39,6 +39,26 @@ def upload_points(request):
         )
 
 
+def get_declension(number, word):
+    declensions_dict = {
+        'объект': ['объект', 'объекта', 'объектов'],
+    }
+    if number // 10 == 1:
+        return declensions_dict[word][2]
+    last_number = number % 10
+    if last_number == 1:
+        return declensions_dict[word][0]
+    if 2 <= last_number <= 4:
+        return declensions_dict[word][1]
+    return declensions_dict[word][2]
+
+
+def get_message(n: int):
+    if n == 1:
+        return f'Найден {n} {get_declension(n, "объект")}'
+    return f'Найдено {n} {get_declension(n, "объект")}'
+
+
 def get_points(request):
     if from_date_str := request.POST.get('from_date'):
         from_date = datetime.date.fromisoformat(from_date_str)
@@ -76,12 +96,14 @@ def get_points(request):
             'description': image['description'],
         } for image in images
     ])
+    message = get_message(len(images))
     context = {
         "images": images,
         'from_date': from_date_str,
         'to_date': to_date_str,
         'radius': int(radius * RATIO),
         'points': points_list,
+        'message': message,
     }
     return render(request, 'world/main.html', context)
 
