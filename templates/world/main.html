@@ -30,6 +30,7 @@
     <script>
     var map = L.map('map', {doubleClickZoom: false});
     var points = []
+    debugger
     var images = {{ images | safe }}
     map.on('click', function(e){
         var marker = new L.marker(e.latlng).addTo(map);
@@ -43,10 +44,14 @@
     debugger
 
     for (image of images) {
-        var marker = L.marker([image.y, image.x]).addTo(map);
-        marker.bindPopup(
+        debugger
+        if ((image.y !=='') && (image.x !== ''))
+        {
+            var marker = L.marker([image.y, image.x]).addTo(map);
+            marker.bindPopup(
                 "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
-        ).openPopup();
+            ).openPopup();
+        }
     }
     if (images.length > 0) {
         map.setView([image.y, image.x], 13);

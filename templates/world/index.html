@@ -8,7 +8,7 @@
 
 
     <h1>Страница загрузки данных</h1>
-
+    <b>Необходимо загружать файл с расширением .csv с разделителем ";"</b><br>
     <form action={% url 'upload' %} method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="file" name="csv_file" />

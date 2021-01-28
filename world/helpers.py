@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import Tuple
+
 from django.apps import apps
 
 
@@ -40,3 +42,13 @@ class BulkCreateManager(object):
         for model_name, objs in self._create_queues.items():
             if len(objs) > 0:
                 self._commit(apps.get_model(model_name))
+
+
+def parse_date_from_str(date_str: str) -> Tuple:
+    if '.' in date_str:
+        day, month, year = date_str.split('.')
+    elif '-' in date_str:
+        year, month, day = date_str.split('-')
+    else:
+        raise ValueError('Wrong date format')
+    return tuple(map(int, [year, month, day]))

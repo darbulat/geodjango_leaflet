@@ -5,37 +5,49 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import Point, MultiPolygon
+from django.db.models import Q
+from django.db.transaction import atomic
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from world.helpers import BulkCreateManager
+from world.helpers import BulkCreateManager, parse_date_from_str
 from world.models import Image
 
 RATIO = 1000
 
 
+@atomic
 def upload_points(request):
     if request.FILES['csv_file']:
 
         file = request.FILES['csv_file']
         csv_file = file.read().decode('utf-8')
-        reader = csv.reader(io.StringIO(csv_file), delimiter=' ', quotechar='|')
-        Image.objects.all().delete()
+        reader = csv.reader(
+            io.StringIO(csv_file),
+            delimiter=';', quotechar='|'
+        )
         bulk_mgr = BulkCreateManager(chunk_size=20)
-        for id_out, long, lat, date, link, description in reader:
+        counter_of_new_objects = 0
+        _, rows_count_dict = Image.objects.all().delete()
+        rows_count = rows_count_dict.get('world.Image') or 0
+        for id_out, lat, long, date, link, description in reader:
             try:
-                date = datetime.date.fromisoformat(date)
+                year, month, day = parse_date_from_str(date)
+                date = datetime.date(year=year, month=month, day=day)
                 point = Point(x=float(long), y=float(lat))
                 bulk_mgr.add(Image(id_out=id_out, point=point,
                                    date=date, link=link,
                                    description=description))
-
+                counter_of_new_objects += 1
             except ValueError:
                 pass
-
         bulk_mgr.done()
+
+        change_counter = counter_of_new_objects - rows_count
         return render(
-            request, 'world/index.html', {'message': 'Данные успешно загружены'}
+            request, 'world/index.html',
+            {'message': f'Новых записей: {change_counter}\n'
+                        f'Записей в базе: {counter_of_new_objects}'}
         )
 
 
@@ -83,17 +95,19 @@ def get_points(request):
     else:
         mp_circles = Point(x=0, y=0)
     images = Image.objects.filter(
+        # Q(point__intersects=mp_circles) | Q(point__isnull=True),
+        point__intersects=mp_circles,
         date__range=[from_date, to_date],
-        point__intersects=mp_circles
     ).values()
     images = list([
         {
             'id_out': image['id_out'],
-            'x': image['point'].x,
-            'y': image['point'].y,
+            'x': image['point'].x if image['point'] is not None else '',
+            'y': image['point'].y if image['point'] is not None else '',
             'date': str(image['date']),
             'link': image['link'],
-            'description': image['description'],
+            'description': image['description']
+            if image['description'] is not None else '',
         } for image in images
     ])
     message = get_message(len(images))
