@@ -5,15 +5,16 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import Point, MultiPolygon
-from django.db.models import Q
 from django.db.transaction import atomic
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
+from world.forms import FoundObjectForm
 from world.helpers import BulkCreateManager, parse_date_from_str
 from world.models import Image
 
-RATIO = 1000
+RATIO = 50000
 
 
 @atomic
@@ -28,7 +29,7 @@ def upload_points(request):
         )
         bulk_mgr = BulkCreateManager(chunk_size=20)
         counter_of_new_objects = 0
-        _, rows_count_dict = Image.objects.all().delete()
+        _, rows_count_dict = Image.objects.filter(id_out__isnull=False).delete()
         rows_count = rows_count_dict.get('world.Image') or 0
         for id_out, lat, long, date, link, description in reader:
             try:
@@ -95,15 +96,14 @@ def get_points(request):
     else:
         mp_circles = Point(x=0, y=0)
     images = Image.objects.filter(
-        # Q(point__intersects=mp_circles) | Q(point__isnull=True),
         point__intersects=mp_circles,
         date__range=[from_date, to_date],
     ).values()
     images = list([
         {
             'id_out': image['id_out'],
-            'x': image['point'].x if image['point'] is not None else '',
-            'y': image['point'].y if image['point'] is not None else '',
+            'x': image['point'].x,
+            'y': image['point'].y,
             'date': str(image['date']),
             'link': image['link'],
             'description': image['description']
@@ -120,6 +120,24 @@ def get_points(request):
         'message': message,
     }
     return render(request, 'world/main.html', context)
+
+
+def send_object(request):
+
+    if request.method == 'POST':
+
+        form = FoundObjectForm(request.POST, request.FILES)
+        if form.is_valid():
+            return HttpResponse(
+                content='Спасибо! Ваше сообщение отправлено.<br>'
+                        'Вам придет сообщение с просьбой указать местоположение найденной вещи')
+        else:
+            return HttpResponseBadRequest(
+                'Ошибка при отправке сообщения. Попробуйте повторить попытку позже')
+
+    else:
+        form = FoundObjectForm()
+        return render(request, 'world/send.html', {'form': form})
 
 
 @login_required(login_url='/admin')

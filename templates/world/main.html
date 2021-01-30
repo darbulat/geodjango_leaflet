@@ -44,26 +44,27 @@
     debugger
 
     for (image of images) {
-        debugger
-        if ((image.y !=='') && (image.x !== ''))
-        {
-            var marker = L.marker([image.y, image.x]).addTo(map);
-            marker.bindPopup(
-                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
-            ).openPopup();
-        }
+        var marker = L.marker([image.y, image.x]).addTo(map);
+        marker.bindPopup(
+            "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
+        ).openPopup();
     }
     if (images.length > 0) {
-        map.setView([image.y, image.x], 13);
+        map.setView([image.y, image.x], 18);
     } else {
-        map.locate({setView: true, maxZoom: 13});
+        map.locate({setView: true, maxZoom: 18});
     }
 
 
     </script>
 
   <div>
-    <form action={% url 'search' %} method="post">
+  <br>
+  <a href="/found">Если нашли потерянную вещь</a>
+  </div>
+  <br>
+  <div></div>
+      <form action={% url 'search' %} method="post">
     {% csrf_token %}
     <label for="radius">Радиус:</label>
         {% if radius %}

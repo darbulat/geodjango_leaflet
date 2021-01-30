@@ -21,5 +21,6 @@ from world import views
 urlpatterns = [
     path('', views.main, name='search'),
     path('admin/', admin.site.urls),
-    path('gis/', include('world.urls'))
+    path('found/', views.send_object),
+    path('gis/', include('world.urls')),
 ]
