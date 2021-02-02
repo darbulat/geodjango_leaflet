@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="">
+
+  <head>
+    <title>Lost & Found</title>
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/css/L.Control.OpenCageData.Search.min.css" />
+
+    <style type="text/css">
+        img {
+          border: 1px solid #dddddd; /* Gray border */
+          border-radius: 4px;  /* Rounded border */
+          padding: 5px; /* Some padding */
+          width: 150px; /* Set a small width */
+        }
+
+        /* Add a hover effect (blue shadow) */
+        img:hover {
+          box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+        }
+        html, body, #map {
+            height: 80%;
+        }
+    </style>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/js/L.Control.OpenCageSearch.min.js"></script>
+    <script>
+    var map = L.map('map', {doubleClickZoom: false});
+    debugger
+    map.locate({setView: true, maxZoom: 18});
+    var options = {
+      key: '{{ opencage_key }}',
+      limit: 10,
+    };
+
+    var point = []
+    var marker = {}
+    map.on('click', function(e){
+debugger
+        if (marker !== undefined) {
+          map.removeLayer(marker);
+        }
+        if (e.latlng !== undefined) {
+            marker = new L.marker(e.latlng).addTo(map);
+
+            point = [e.latlng.lng, e.latlng.lat]
+            document.getElementById('point').value = JSON.stringify(point)
+        }
+    });
+    var control = L.Control.openCageSearch(options).addTo(map);
+
+    L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    </script>
+
+  <br>
+  <div></div>
+      <form action={% url 'location' id_out %} method="post">
+    {% csrf_token %}
+    <input id="point" name="point" type="hidden"  class="query-search" >
+    <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Отправить">
+    </form>
+
+    </div>
+  </body>
+
+</html>

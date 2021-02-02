@@ -15,12 +15,17 @@ import environ
 
 env = environ.Env(
     # set casting, default value
-    DEBUG=(bool, False),
-    DB_NAME=(str, 'postgres'),
-    DB_USER=(str, 'postgres'),
-    DB_PASSWORD=(str, 'password'),
+    DEBUG=(bool, True),
+    DB_NAME=(str, 'lost_found'),
+    DB_USER=(str, 'forest_gateway'),
+    DB_PASSWORD=(str, 'forest_gateway'),
     DB_HOST=(str, '127.0.0.1'),
     DB_PORT=(str, '5432'),
+    SECRET_KEY=(str, ''),
+    SENDER_EMAIL=(str, ''),
+    RECEIVER_EMAIL=(str, ''),
+    EMAIL_PASSWORD=(str, ''),
+    OPENCAGE_KEY=(str, ''),
 )
 # reading .env file
 environ.Env.read_env()
@@ -135,3 +140,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATIC_URL = '/static/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+SENDER_EMAIL = env('SENDER_EMAIL')
+RECEIVER_EMAIL = env('RECEIVER_EMAIL')
+EMAIL_PASSWORD = env('EMAIL_PASSWORD')
+OPENCAGE_KEY = env('OPENCAGE_KEY')

@@ -4,6 +4,8 @@
   <head>
     <title>Lost & Found</title>
     <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/css/L.Control.OpenCageData.Search.min.css" />
+
     <style type="text/css">
         img {
           border: 1px solid #ddd; /* Gray border */
@@ -25,10 +27,15 @@
 
   <body>
     <div id="map"></div>
-
     <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/js/L.Control.OpenCageSearch.min.js"></script>
     <script>
     var map = L.map('map', {doubleClickZoom: false});
+    var options = {
+      key: '{{ opencage_key }}',
+      limit: 10,
+    };
+
     var points = []
     debugger
     var images = {{ images | safe }}
@@ -37,11 +44,11 @@
         points.push([e.latlng.lng, e.latlng.lat])
         document.getElementById('points').value = JSON.stringify(points)
     });
+    var control = L.Control.openCageSearch(options).addTo(map);
 
     L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
-    debugger
 
     for (image of images) {
         var marker = L.marker([image.y, image.x]).addTo(map);

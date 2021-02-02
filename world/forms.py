@@ -5,6 +5,8 @@ from world.models import Image
 
 class FoundObjectForm(forms.ModelForm):
 
+    is_true_location = forms.NullBooleanField()
+
     class Meta:
         model = Image
         fields = [

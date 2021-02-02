@@ -10,9 +10,12 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
+from djangoProject.settings import EMAIL_PASSWORD, RECEIVER_EMAIL, SENDER_EMAIL, \
+    OPENCAGE_KEY
 from world.forms import FoundObjectForm
 from world.helpers import BulkCreateManager, parse_date_from_str
 from world.models import Image
+from world.notifications import send_email
 
 RATIO = 50000
 
@@ -118,6 +121,7 @@ def get_points(request):
         'radius': int(radius * RATIO),
         'points': points_list,
         'message': message,
+        'opencage_key': OPENCAGE_KEY,
     }
     return render(request, 'world/main.html', context)
 
@@ -128,9 +132,20 @@ def send_object(request):
 
         form = FoundObjectForm(request.POST, request.FILES)
         if form.is_valid():
+            description = form.cleaned_data['description']
+            contacts = form.cleaned_data['contacts']
+            is_true_location = form.cleaned_data['is_true_location']
+            body = f'Описание: {description} <br> Контакты: {contacts} <br>' \
+                   f'Фотография с места находки: {is_true_location}'
+            file = form.files.get('image_file')
+            send_email(subject='Найден новый объект',
+                       body=body, fp=file,
+                       sender_email=SENDER_EMAIL,
+                       receiver_email=RECEIVER_EMAIL,
+                       password=EMAIL_PASSWORD)
             return HttpResponse(
                 content='Спасибо! Ваше сообщение отправлено.<br>'
-                        'Вам придет сообщение с просьбой указать местоположение найденной вещи')
+                        'Вам придет письмо с просьбой указать местоположение найденной вещи')
         else:
             return HttpResponseBadRequest(
                 'Ошибка при отправке сообщения. Попробуйте повторить попытку позже')
@@ -138,6 +153,23 @@ def send_object(request):
     else:
         form = FoundObjectForm()
         return render(request, 'world/send.html', {'form': form})
+
+
+def get_location(request, id_out):
+    if request.method == 'GET':
+        return render(
+            request, 'world/location.html',
+            dict(opencage_key=OPENCAGE_KEY, id_out=id_out)
+        )
+    if request.method == 'POST':
+        if request.POST.get('point'):
+            point = json.loads(request.POST.get('point'))
+            body = f'ID объекта: {id_out}<br>X = {point[0]}  Y = {point[1]}'
+            send_email(subject='Получены новые координаты', body=body,
+                       sender_email=SENDER_EMAIL, receiver_email=RECEIVER_EMAIL,
+                       password=EMAIL_PASSWORD)
+        return render(request, 'world/location.html',
+                      dict(opencage_key=OPENCAGE_KEY, id_out=id_out))
 
 
 @login_required(login_url='/admin')
@@ -151,6 +183,7 @@ def index(request):
 @csrf_exempt
 def main(request):
     if request.method == 'GET':
-        return render(request, 'world/main.html', dict(images=[]))
+        return render(request, 'world/main.html',
+                      dict(opencage_key=OPENCAGE_KEY, images=[]))
     if request.method == 'POST':
         return get_points(request)
