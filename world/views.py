@@ -10,10 +10,10 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from djangoProject.settings import EMAIL_PASSWORD, RECEIVER_EMAIL, SENDER_EMAIL, \
-    OPENCAGE_KEY
+from djangoProject.settings import (EMAIL_PASSWORD, RECEIVER_EMAIL,
+                                    SENDER_EMAIL, OPENCAGE_KEY)
 from world.forms import FoundObjectForm
-from world.helpers import BulkCreateManager, parse_date_from_str
+from world.helpers import BulkCreateManager, parse_date_from_str, get_declension
 from world.models import Image
 from world.notifications import send_email
 
@@ -53,20 +53,6 @@ def upload_points(request):
             {'message': f'Новых записей: {change_counter}\n'
                         f'Записей в базе: {counter_of_new_objects}'}
         )
-
-
-def get_declension(number, word):
-    declensions_dict = {
-        'объект': ['объект', 'объекта', 'объектов'],
-    }
-    if number // 10 == 1:
-        return declensions_dict[word][2]
-    last_number = number % 10
-    if last_number == 1:
-        return declensions_dict[word][0]
-    if 2 <= last_number <= 4:
-        return declensions_dict[word][1]
-    return declensions_dict[word][2]
 
 
 def get_message(n: int):
@@ -127,7 +113,6 @@ def get_points(request):
 
 
 def send_object(request):
-
     if request.method == 'POST':
 
         form = FoundObjectForm(request.POST, request.FILES)
@@ -148,7 +133,7 @@ def send_object(request):
                         'Вам придет письмо с просьбой указать местоположение найденной вещи')
         else:
             return HttpResponseBadRequest(
-                'Ошибка при отправке сообщения. Попробуйте повторить попытку позже')
+                'Ошибка при отправке сообщения. Повторите попытку позже')
 
     else:
         form = FoundObjectForm()
@@ -168,6 +153,8 @@ def get_location(request, id_out):
             send_email(subject='Получены новые координаты', body=body,
                        sender_email=SENDER_EMAIL, receiver_email=RECEIVER_EMAIL,
                        password=EMAIL_PASSWORD)
+            return HttpResponse(content='Координаты отправлены администратору, '
+                                        'спасибо за бдительность!')
         return render(request, 'world/location.html',
                       dict(opencage_key=OPENCAGE_KEY, id_out=id_out))
 

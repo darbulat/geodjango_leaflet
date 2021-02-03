@@ -52,3 +52,17 @@ def parse_date_from_str(date_str: str) -> Tuple:
     else:
         raise ValueError('Wrong date format')
     return tuple(map(int, [year, month, day]))
+
+
+def get_declension(number, word):
+    declensions_dict = {
+        'объект': ['объект', 'объекта', 'объектов'],
+    }
+    if number // 10 == 1:
+        return declensions_dict[word][2]
+    last_number = number % 10
+    if last_number == 1:
+        return declensions_dict[word][0]
+    if 2 <= last_number <= 4:
+        return declensions_dict[word][1]
+    return declensions_dict[word][2]
