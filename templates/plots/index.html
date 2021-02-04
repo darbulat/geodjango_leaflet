@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <style type="text/css">
+        html, body, #map {
+            height: 80%;
+        }
+        .wrapper {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          grid-gap: 1px;
+          grid-auto-rows: minmax(100px, auto);
+          grid-template-rows: 100px auto auto;
+        }
+        .left {
+          grid-column: 1;
+          grid-row: 1 / 10;
+        }
+        .center {
+          grid-column: 2;
+          grid-row: 1;
+        }
+        .right {
+          grid-column: 3;
+          grid-row: 3;
+        }
+        .center-down {
+          grid-column: 2;
+          grid-row: 3;
+        }
+
+    </style>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Title</title>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="left" id="map">
+
+        </div>
+
+        <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+
+        <div class="center">
+        <table>
+            <tr><b>Нулевая точка</b></tr>
+            <tr>
+                <th>точка</th>
+                <th>долгота</th>
+                <th>широта</th>
+            </tr>
+            <form action="" method="post">
+                <tr>
+                    {% csrf_token %}
+                    {% for field in point_form %}
+                            <td>{{ field }}</td>
+                    {% endfor %}
+                <td><input type="submit" value="Добавить"></td>
+                </tr>
+            </form>
+        </table>
+        </div>
+        <div class="center-down">
+            <table>
+                <tr><b>Привязки</b></tr>
+                <tr>
+                    <th>начало</th>
+                    <th>конец</th>
+                    <th>азимут</th>
+                    <th>расстояние, м</th>
+                </tr>
+            {% for start_point, end_point, rhumb, distance in line_forms %}
+                <tr>
+                    <td>{{ start_point }}</td>
+                    <td>{{ end_point }}</td>
+                    <td>{{ rhumb }}</td>
+                    <td>{{ distance }}</td>
+                </tr>
+            {% endfor %}
+
+                <form action="" method="post">
+                    <input id="points" name="points" type="hidden"  class="query-search" >
+                    <input id="line_forms" name="line_forms" type="hidden">
+                    <tr>
+                        {% csrf_token %}
+                        {% for field in line_form.visible_fields %}
+                                <td>{{ field }}</td>
+                        {% endfor %}
+
+                    <td><input type="submit" value="Добавить"></td>
+                    </tr>
+                </form>
+                    <form action="" method="post">
+                        {% csrf_token %}
+                        {{ shape_form.linear_ring }}
+                        <tr>
+                            <input type="submit" value="Скачать полигон">
+                        </tr>
+                    </form>
+            </table>
+        </div>
+        <div class="right">
+            <br>
+            <table border="1">
+                <tr>
+                    <th>точка</th>
+                    <th>долгота</th>
+                    <th>широта</th>
+                </tr>
+                {% for point, location in points.items %}
+                    <tr>
+                        <td>{{ point }}</td>
+                        <td>{{ location.0.1 }}</td>
+                        <td>{{ location.0.0 }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+
+    <script>
+        var map = L.map('map', {doubleClickZoom: false});
+        googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3']
+        }).addTo(map);
+
+        function isEmpty(obj) {
+          return Object.keys(obj).length === 0;
+        }
+        debugger;
+        var points = {{ points | safe }};
+        var line_forms = {{ line_forms | safe }}
+        if (line_forms.length != 0){
+            document.getElementById('line_forms').value = JSON.stringify(line_forms)
+        }
+        if (!isEmpty(points)) {
+            document.getElementById('points').value = JSON.stringify(points)
+            document.getElementById('id_linear_ring').value = JSON.stringify(points)
+            document.getElementById('id_long').value = points['0'][0][1]
+            document.getElementById('id_lat').value = points['0'][0][0]
+        }
+        var points_list = Object.keys(points).map(function (key) {
+
+            var marker = L.marker([points[key][0][0], points[key][0][1]]).addTo(map);
+            marker.bindPopup(key);
+            return points[key][0];
+        });
+
+        var found = false;
+        for (var point of points_list){
+            map.setView([point[0], point[1]], 15);
+            found = true
+        }
+        debugger
+        if (found){
+            var polygon = L.polygon([points_list]).addTo(map);
+        } else {
+            map.setView([56.55, 100.78], 15)
+        }
+    </script>
+
+</body>
+</html>

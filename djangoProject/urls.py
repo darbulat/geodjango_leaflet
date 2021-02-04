@@ -23,4 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('found/', views.send_object),
     path('gis/', include('world.urls')),
+    path('abris/', include('plots.urls')),
 ]
