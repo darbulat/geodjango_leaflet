@@ -8,3 +8,4 @@ Pillow==8.1.0
 python-resize-image==1.1.19
 Fiona==1.8.18
 pyproj==3.0.0.post1
+Shapely==1.7.1

@@ -1,11 +1,16 @@
-from django import forms
+from django.contrib.gis import forms
 
 from world.models import Image
 
 
 class FoundObjectForm(forms.ModelForm):
-
-    is_true_location = forms.NullBooleanField()
+    point = forms.PointField(
+        widget=forms.OSMWidget(
+            attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}
+        ),
+        required=False,
+        label='Координаты',
+    )
 
     class Meta:
         model = Image

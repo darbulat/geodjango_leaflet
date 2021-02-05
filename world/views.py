@@ -119,9 +119,13 @@ def send_object(request):
         if form.is_valid():
             description = form.cleaned_data['description']
             contacts = form.cleaned_data['contacts']
-            is_true_location = form.cleaned_data['is_true_location']
-            body = f'Описание: {description} <br> Контакты: {contacts} <br>' \
-                   f'Фотография с места находки: {is_true_location}'
+            body = f'Описание: {description} <br> Контакты: {contacts} <br>'
+            point: Point = form.cleaned_data['point']
+            if point:
+                point.transform(4326)
+                location = dict(x=point.x, y=point.y)
+                body += f'Координаты: {location}'
+
             file = form.files.get('image_file')
             send_email(subject='Найден новый объект',
                        body=body, fp=file,
@@ -129,8 +133,9 @@ def send_object(request):
                        receiver_email=RECEIVER_EMAIL,
                        password=EMAIL_PASSWORD)
             return HttpResponse(
-                content='Спасибо! Ваше сообщение отправлено.<br>'
-                        'Вам придет письмо с просьбой указать местоположение найденной вещи')
+                content='Ваше сообщение отправлено администраторам, '
+                        'спасибо за бдительность!'
+            )
         else:
             return HttpResponseBadRequest(
                 'Ошибка при отправке сообщения. Повторите попытку позже')
