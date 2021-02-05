@@ -5,71 +5,38 @@
     <title>Lost & Found</title>
   {{ form.media }}
 
-    <style type="text/css">
-        img {
-          border: 1px solid #dddddd; /* Gray border */
-          border-radius: 4px;  /* Rounded border */
-          padding: 5px; /* Some padding */
-          width: 150px; /* Set a small width */
-        }
-
-        /* Add a hover effect (blue shadow) */
-        img:hover {
-          box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
-        }
-        html, body {
-            height: 80%;
-        }
-       .wrapper {
-          display: grid;
-          grid-template-columns: 300px;
-          grid-gap: 1px;
-          grid-template-rows: 100px;
-        }
-        .up {
-          grid-column: 1;
-          grid-row: 1;
-        }
-    </style>
       <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   </head>
 
   <body>
-    <div class="wrapper">
-        <div class="up">
-            <form action="" enctype="multipart/form-data" method="post">
-                {% csrf_token %}
-                <table>
-                    {{ form }}
-                  <script>
-                      debugger
-                      var location_options = {
-                          enableHighAccuracy: true,
-                          timeout: 5000,
-                          maximumAge: 0
-                        };
+    <form action="" enctype="multipart/form-data" method="post">
+        {% csrf_token %}
+            {{ form }}
+          <script>
+              var location_options = {
+                  enableHighAccuracy: true,
+                  timeout: 5000,
+                  maximumAge: 0
+                };
 
-                        function success(pos) {
-                            debugger
-                            var crd = pos.coords;
-                            options['default_lon'] = crd.longitude;
-                            options['default_lat'] = crd.latitude;
-                            options['default_zoom'] = 12;
-                            geodjango_point.options = options
-                            geodjango_point.map.getView().setCenter(geodjango_point.defaultCenter());
-                        }
+                function success(pos) {
+                    debugger
+                    var crd = pos.coords;
+                    options['default_lon'] = crd.longitude;
+                    options['default_lat'] = crd.latitude;
+                    options['default_zoom'] = 12;
+                    geodjango_point.options = options
+                    geodjango_point.map.getView().setCenter(geodjango_point.defaultCenter());
+                }
 
-                        function error(err) {
-                             console.warn(`ERROR(${err.code}): ${err.message}`);
-                        }
+                function error(err) {
+                     console.warn(`ERROR(${err.code}): ${err.message}`);
+                }
 
-                        navigator.geolocation.getCurrentPosition(success, error, location_options);
-                  </script>
-                </table>
-                <button type="submit" class="btn btn-success">Отправить</button>
-            </form>
-        </div>
-    </div>
+                navigator.geolocation.getCurrentPosition(success, error, location_options);
+          </script>
+        <button type="submit" class="btn btn-success">Отправить</button>
+    </form>
 
   </body>
 
