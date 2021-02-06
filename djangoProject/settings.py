@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'world',
     'plots',
+    'bootstrap4',
+    'crispy_forms',
 ]
 
 MIDDLEWARE = [
@@ -124,7 +126,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-ru'
 
 TIME_ZONE = 'UTC'
 
@@ -146,3 +148,4 @@ SENDER_EMAIL = env('SENDER_EMAIL')
 RECEIVER_EMAIL = env('RECEIVER_EMAIL')
 EMAIL_PASSWORD = env('EMAIL_PASSWORD')
 OPENCAGE_KEY = env('OPENCAGE_KEY')
+CRISPY_TEMPLATE_PACK = 'bootstrap4'
