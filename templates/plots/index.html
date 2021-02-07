@@ -206,12 +206,6 @@
             maxZoom: 20,
             subdomains:['mt0','mt1','mt2','mt3']
         });
-        var miniIcon = L.icon({
-            iconUrl: 'media/point.png',
-            iconSize:     [4, 4],
-            iconAnchor:   [2, 2],
-            popupAnchor:  [0, 0]
-        });
 
         var map = L.map('map', {doubleClickZoom: false, layers: [markerLayerGroup, googleSat]});
 
