@@ -22,6 +22,10 @@
           grid-column: 2;
           grid-row: 1;
         }
+        .right-up{
+            grid-column: 3;
+            grid-row: 1;
+        }
         .right {
           grid-column: 3;
           grid-row: 3;
@@ -30,11 +34,18 @@
           grid-column: 2;
           grid-row: 3;
         }
-
+        /* css to customize Leaflet default styles  */
+        .my-label {
+            position: absolute;
+            color: black;
+            width:5px;
+            height: 5px;
+            font-size:9px;
+        }
     </style>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Title</title>
+
 </head>
 <body>
     <div class="wrapper">
@@ -52,7 +63,8 @@
                 <th>долгота</th>
                 <th>широта</th>
             </tr>
-            <form action="" method="post">
+
+            <form action="" method="post" class="uniForm">
                 <tr>
                     {% csrf_token %}
                     {% for field in point_form %}
@@ -62,6 +74,18 @@
                 </tr>
             </form>
         </table>
+        </div>
+        <div class="right-up">
+            <table border="1">
+                <tr>
+                    <th>площадь, Га</th>
+                    <th>расхождение, м</th>
+                </tr>
+                <tr>
+                    <td>{{ polygon_area }}</td>
+                    <td>{{ difference }}</td>
+                </tr>
+            </table>
         </div>
         <div class="center-down">
             <table>
@@ -81,23 +105,33 @@
                 </tr>
             {% endfor %}
 
-                <form action="" method="post">
+                <form action="" method="post" id="line-form">
+                    <input id="zero_lines" name="zero_lines" type="hidden"  class="query-search" >
+                    <input id="zero_point" name="zero_point" type="hidden"  class="query-search" >
                     <input id="points" name="points" type="hidden"  class="query-search" >
                     <input id="line_forms" name="line_forms" type="hidden">
+                    <input id="polygon_area" name="polygon_area" type="hidden">
+                    <input id="difference" name="difference" type="hidden">
                     <tr>
                         {% csrf_token %}
                         {% for field in line_form.visible_fields %}
                                 <td>{{ field }}</td>
                         {% endfor %}
 
-                    <td><input type="submit" value="Добавить"></td>
+                    <td><input type="submit" name="line-form" id="add-line-form" value="Добавить"></td>
+                    <td><input type="submit" name="line-form" id="del-line-form" value="Отменить"></td>
+                    </tr>
+                    <tr>
+                        {% if message %}
+                            <span style="color: red">{{ message }}</span>
+                        {% endif %}
                     </tr>
                 </form>
                     <form action="" method="post">
                         {% csrf_token %}
                         {{ shape_form.linear_ring }}
                         <tr>
-                            <input type="submit" value="Скачать полигон">
+                            <input type="submit" id="download-polygon" value="Скачать полигон">
                         </tr>
                     </form>
             </table>
@@ -110,6 +144,15 @@
                     <th>долгота</th>
                     <th>широта</th>
                 </tr>
+
+                {% for point, location in zero_point.items %}
+                    <tr>
+                        <td>{{ point }}</td>
+                        <td>{{ location.1 }}</td>
+                        <td>{{ location.0 }}</td>
+                    </tr>
+                {% endfor %}
+
                 {% for point, location in points.items %}
                     <tr>
                         <td>{{ point }}</td>
@@ -122,45 +165,121 @@
     </div>
 
     <script>
-        var map = L.map('map', {doubleClickZoom: false});
+        var points = {{ points | safe }};
+        var line_forms = {{ line_forms | safe }}
+        var zero_point = {{ zero_point | safe }}
+        var zero_lines = {{ zero_lines | safe }}
+        var difference = {{ difference }}
+        var polygon_area = {{ polygon_area }}
+        var popupLayers = []
+        var markers = []
+        var message = '{{ message }}'
+        tooltipOption = {
+            noHide: true,
+            permanent: true,
+            className: "my-label",
+            offset: [0, 0],
+            direction: 'top',
+            opacity: 0.9,
+        }
+        var miniIcon = L.icon({
+            iconUrl: 'media/point.png',
+            iconSize:     [4, 4],
+            iconAnchor:   [2, 2],
+            popupAnchor:  [0, 0]
+        });
+        var points_list = Object.keys(points).map(function (key) {
+            var location = new L.LatLng(points[key][0][0], points[key][0][1]);
+            popup = new L.Popup({'closeButton': false});
+            popup.setLatLng(location);
+            popup.setContent(key);
+            popupLayers.push(popup)
+            var marker = L.marker(location, {icon: miniIcon})
+            marker.bindTooltip(key, tooltipOption);
+
+            markers.push(marker);
+            return points[key][0];
+        });
+        var popupLayerGroup = L.layerGroup(popupLayers)
+        var markerLayerGroup = L.layerGroup(markers)
         googleSat = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
             maxZoom: 20,
             subdomains:['mt0','mt1','mt2','mt3']
-        }).addTo(map);
+        });
+        var miniIcon = L.icon({
+            iconUrl: 'media/point.png',
+            iconSize:     [4, 4],
+            iconAnchor:   [2, 2],
+            popupAnchor:  [0, 0]
+        });
+
+        var map = L.map('map', {doubleClickZoom: false, layers: [markerLayerGroup, googleSat]});
+
 
         function isEmpty(obj) {
           return Object.keys(obj).length === 0;
         }
-        debugger;
-        var points = {{ points | safe }};
-        var line_forms = {{ line_forms | safe }}
-        if (line_forms.length != 0){
+
+        if (!isEmpty(zero_lines)){
+            document.getElementById('zero_lines').value = JSON.stringify(zero_lines)
+            var lines = L.polygon([zero_lines['0']]).addTo(map);
+        }
+        if (!isEmpty(zero_point)) {
+            debugger
+            document.getElementById('zero_point').value = JSON.stringify(zero_point)
+            document.getElementById('difference').value = difference
+            document.getElementById('polygon_area').value = polygon_area
+            document.getElementById('id_long').value = zero_point['0'][1]
+            document.getElementById('id_lat').value = zero_point['0'][0]
+            map.setView(zero_point['0'], 15);
+            var marker = L.marker(zero_point['0'], {icon: miniIcon}).addTo(map);
+            marker.bindTooltip('0', tooltipOption);
+        } else {
+            map.setView([56.55, 100.78], 15)
+        }
+        document.getElementById("download-polygon").disabled = !!message;
+
+        if (line_forms.length !== 0){
             document.getElementById('line_forms').value = JSON.stringify(line_forms)
         }
         if (!isEmpty(points)) {
             document.getElementById('points').value = JSON.stringify(points)
             document.getElementById('id_linear_ring').value = JSON.stringify(points)
-            document.getElementById('id_long').value = points['0'][0][1]
-            document.getElementById('id_lat').value = points['0'][0][0]
         }
-        var points_list = Object.keys(points).map(function (key) {
 
-            var marker = L.marker([points[key][0][0], points[key][0][1]]).addTo(map);
-            marker.bindPopup(key);
-            return points[key][0];
-        });
-
-        var found = false;
-        for (var point of points_list){
-            map.setView([point[0], point[1]], 15);
-            found = true
-        }
-        debugger
-        if (found){
+        if (points_list.length > 1){
             var polygon = L.polygon([points_list]).addTo(map);
-        } else {
-            map.setView([56.55, 100.78], 15)
         }
+
+        var form = document.getElementById('line-form');
+        form.onsubmit = function() {
+            form.target = '_self';
+        };
+
+        document.getElementById('add-line-form').onclick = function() {
+            form.submit();
+        }
+        document.getElementById('del-line-form').onclick = function() {
+            debugger
+            var last_line = line_forms.pop()
+            var points_line_form = Object.keys(line_forms).map(function (key) {
+                return line_forms[key][1];
+            });
+            var key = last_line[1]
+            if (!(key in points_line_form)){
+                delete points[key]
+            }
+            if (last_line[0] in zero_lines){
+                delete zero_lines[last_line[0]]
+            }
+            document.getElementById('line_forms').value = JSON.stringify(line_forms)
+            document.getElementById('points').value = JSON.stringify(points)
+            document.getElementById('id_linear_ring').value = JSON.stringify(points)
+            document.getElementById('zero_lines').value = JSON.stringify(zero_lines)
+            form.submit();
+        }
+
+
     </script>
 
 </body>
