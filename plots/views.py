@@ -142,8 +142,9 @@ def index(request):
             end_point_id = line_form.cleaned_data['end_point']
             rhumb = line_form.cleaned_data['rhumb']
             distance = line_form.cleaned_data['distance']
-            if start_point_id not in points:
-                message = f' выберите начальную точку из {list(points.keys())}'
+            start_points = list(points.keys()) + list(zero_point.keys())
+            if start_point_id not in start_points:
+                message = f' выберите начальную точку из {start_points}'
             else:
                 if start_point_id in zero_point:
                     start_point = zero_point[start_point_id]
