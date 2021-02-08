@@ -35,9 +35,13 @@
       key: '{{ opencage_key }}',
       limit: 10,
     };
-
+    var miniIcon = L.icon({
+        iconUrl: '../media/point.png',
+        iconSize:     [8, 8],
+        iconAnchor:   [10, 4],
+        popupAnchor:  [0, 0]
+    });
     var points = []
-    debugger
     var images = {{ images | safe }}
     map.on('click', function(e){
         var marker = new L.marker(e.latlng).addTo(map);
@@ -51,7 +55,7 @@
     }).addTo(map);
 
     for (image of images) {
-        var marker = L.marker([image.y, image.x]).addTo(map);
+        var marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
         marker.bindPopup(
             "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
         ).openPopup();
@@ -95,7 +99,6 @@
     <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
     </form>
 
-</div>
 <br>
 <b>{{ message }}</b>
     <br>
