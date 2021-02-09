@@ -102,11 +102,19 @@
 <br>
 <b>{{ message }}</b>
     <br>
+    <br>
 {% for image in images %}
     <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
-    <img src={{ image.link }} alt="Forest"><br>
-    {{ image.description }}
+        <img src={{ image.link }} alt="{{ image.link }}"><br>
     </a><br>
+    {{ image.description }}
+    <br>
+    {% if image.contacts %}
+        <a target="_blank" rel="noopener noreferrer" href={{ image.contacts }}>{{ image.contacts }}</a>
+        <br>
+    {% endif %}
+        <br>
+
 {% endfor %}
   </body>
 

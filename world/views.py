@@ -34,17 +34,21 @@ def upload_points(request):
         counter_of_new_objects = 0
         _, rows_count_dict = Image.objects.filter(id_out__isnull=False).delete()
         rows_count = rows_count_dict.get('world.Image') or 0
-        for id_out, lat, long, date, link, description in reader:
-            try:
-                year, month, day = parse_date_from_str(date)
-                date = datetime.date(year=year, month=month, day=day)
-                point = Point(x=float(long), y=float(lat))
-                bulk_mgr.add(Image(id_out=id_out, point=point,
-                                   date=date, link=link,
-                                   description=description))
-                counter_of_new_objects += 1
-            except ValueError:
-                pass
+        try:
+            for id_out, lat, long, date, link, description, contacts in reader:
+                try:
+                    year, month, day = parse_date_from_str(date)
+                    date = datetime.date(year=year, month=month, day=day)
+                    point = Point(x=float(long), y=float(lat))
+                    bulk_mgr.add(Image(id_out=id_out, point=point,
+                                       date=date, link=link,
+                                       description=description,
+                                       contacts=contacts))
+                    counter_of_new_objects += 1
+                except ValueError:
+                    pass
+        except ValueError:
+            pass
         bulk_mgr.done()
 
         change_counter = counter_of_new_objects - rows_count
@@ -97,6 +101,7 @@ def get_points(request):
             'link': image['link'],
             'description': image['description']
             if image['description'] is not None else '',
+            'contacts': image['contacts']
         } for image in images
     ])
     message = get_message(len(images))
