@@ -43,8 +43,10 @@
     });
     var points = []
     var images = {{ images | safe }}
+    var markerGroup = L.layerGroup().addTo(map);
+
     map.on('click', function(e){
-        var marker = new L.marker(e.latlng).addTo(map);
+        L.marker(e.latlng).addTo(markerGroup);
         points.push([e.latlng.lng, e.latlng.lat])
         document.getElementById('points').value = JSON.stringify(points)
     });
@@ -66,12 +68,16 @@
         map.locate({setView: true, maxZoom: 18});
     }
 
+    function deletePoints() {
+        points = []
+        document.getElementById('points').value = JSON.stringify(points)
+        markerGroup.clearLayers()
+    }
 
     </script>
 
   <div>
-  <br>
-  <a href="/found">Если нашли потерянную вещь</a>
+    <input onclick="deletePoints()" type="submit" name="delete-all-points" id="delete-all-points" value="Удалить все отметки">
   </div>
   <br>
   <div></div>
@@ -79,9 +85,9 @@
     {% csrf_token %}
     <label for="radius">Радиус:</label>
         {% if radius %}
-    <input id="radius" name="radius" type="number" class="query-search" value={{ radius }} size="5"><br>
+    <input id="radius" name="radius" type="number" step="any" class="query-search" value={{ radius | safe }} size="5"><br>
         {% else %}
-    <input id="radius" name="radius" type="number" class="query-search" value=100 size="5"><br>
+    <input id="radius" name="radius" type="number" step="any" class="query-search" value=30 size="5"><br>
         {% endif %}
     <label for="from_date">Начало:</label>
     {% if from_date %}
@@ -98,7 +104,8 @@
     <input id="points" name="points" type="hidden"  class="query-search" >
     <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
     </form>
-
+  <br>
+  <a href="/found">Если нашли потерянную вещь</a>
 <br>
 <b>{{ message }}</b>
     <br>

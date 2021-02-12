@@ -4,7 +4,8 @@ import io
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.contrib.gis.geos import Point, MultiPolygon
+from django.contrib.gis.geos import Point, MultiPoint
+from django.contrib.gis.measure import D
 from django.db.transaction import atomic
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
@@ -16,8 +17,6 @@ from world.forms import FoundObjectForm
 from world.helpers import BulkCreateManager, parse_date_from_str, get_declension
 from world.models import Image
 from world.notifications import send_email
-
-RATIO = 50000
 
 
 @atomic
@@ -75,21 +74,18 @@ def get_points(request):
     else:
         to_date = datetime.date.today() + datetime.timedelta(days=1)
     if radius := request.POST.get('radius'):
-        radius = int(radius) / RATIO
+        radius = float(radius)
     else:
-        radius = 100 / RATIO
+        radius = 30
     points_list = []
+    multi_points = MultiPoint(Point(55.752071, 48.744513))
     if request.POST.get('points'):
         points_list = json.loads(request.POST.get('points'))
-        circles = [
-            Point(x=long, y=lat).buffer(radius)
-            for long, lat in points_list
-        ]
-        mp_circles = MultiPolygon(circles)
-    else:
-        mp_circles = Point(x=0, y=0)
+        multi_points = MultiPoint(*[
+            Point(x=long, y=lat) for long, lat in points_list
+        ], srid=4326)
     images = Image.objects.filter(
-        point__intersects=mp_circles,
+        point__distance_lte=(multi_points, D(m=radius)),
         date__range=[from_date, to_date],
     ).values()
     images = list([
@@ -109,7 +105,7 @@ def get_points(request):
         "images": images,
         'from_date': from_date_str,
         'to_date': to_date_str,
-        'radius': int(radius * RATIO),
+        'radius': float(radius),
         'points': points_list,
         'message': message,
         'opencage_key': OPENCAGE_KEY,
