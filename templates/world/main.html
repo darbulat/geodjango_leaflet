@@ -42,7 +42,7 @@
         popupAnchor:  [0, 0]
     });
     var points = []
-    var images = {{ images | safe }}
+    var images_ = {{ images | safe }}
     var markerGroup = L.layerGroup().addTo(map);
 
     map.on('click', function(e){
@@ -56,13 +56,13 @@
       attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    for (image of images) {
+    for (image of images_) {
         var marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
         marker.bindPopup(
             "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
         ).openPopup();
     }
-    if (images.length > 0) {
+    if (images_.length > 0) {
         map.setView([image.y, image.x], 18);
     } else {
         map.locate({setView: true, maxZoom: 18});
@@ -112,7 +112,11 @@
     <br>
 {% for image in images %}
     <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
-        <img src={{ image.link }} alt="{{ image.link }}"><br>
+        {% if image.link %}
+          <img src={{ image.link }} alt="{{ image.link }}"><br>
+        {% else %}
+          <img src={{ image.image_file.url }} alt="{{ image.image_file.url }}"><br>
+        {% endif %}
     </a><br>
     {{ image.description }}
     <br>

@@ -23,6 +23,8 @@ from world.helpers import BulkCreateManager, parse_date_from_str, get_declension
 from world.models import Image
 from world.notifications import send_email
 
+from djangoProject import settings
+
 
 @atomic
 def upload_points(request):
@@ -150,8 +152,11 @@ def send_object(request):
                 point=point,
                 image_file=file,
             )
-
+            
             obj.save()
+            obj.link=(".."+obj.image_file.url) # TODO: Сделать по-человечески
+            obj.save()
+
 
             if IS_SEND_EMAIL:
                 send_email(subject='Найден новый объект',
