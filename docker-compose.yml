@@ -1,11 +1,24 @@
-version: '3.7'
+version: "3"
 services:
   web:
-    build: ./app
-    command: python manage.py runserver 0.0.0.0:8000
-    volumes:
-      - ./app/:/usr/src/app/
+    build: .
+    restart: on-failure
+    command: bash -c "ls -lha && pwd && python ./manage.py migrate && python ./manage.py runserver 0.0.0.0:8000"
+    #volumes:
+    #  - ./app/:/usr/src/app/
     ports:
-      - 8000:8000
+      - 80:8000
     env_file:
       - .env
+
+  postgis:
+    container_name: postgis
+    image:  kartoza/postgis:12.1
+    environment:
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis,hstore,postgis_topology,postgis_raster
+    env_file:
+      - .env
+    volumes:
+      - /opt/pgdata:/var/lib/postgresql
+    ports:
+      - "5432:5432"
