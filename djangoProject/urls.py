@@ -18,13 +18,10 @@ from django.contrib import admin
 from django.urls import path, include
 
 from djangoProject import settings
-from world import views
 
 urlpatterns = [
-    path('', views.main, name='search'),
+    path('', include('world.urls')),
     path('admin/', admin.site.urls),
-    path('found/', views.send_object),
-    path('gis/', include('world.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

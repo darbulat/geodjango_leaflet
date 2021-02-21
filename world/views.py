@@ -18,12 +18,10 @@ from djangoProject.settings import (
     OPENCAGE_KEY,
     IS_SEND_EMAIL,
 )
-from world.forms import FoundObjectForm
+from world.forms import FoundObjectForm, LostObjectForm
 from world.helpers import BulkCreateManager, parse_date_from_str, get_declension
-from world.models import Image
+from world.models import Image, FOUND, LOST
 from world.notifications import send_email
-
-from djangoProject import settings
 
 
 @atomic
@@ -63,10 +61,10 @@ def upload_points(request):
         change_counter = counter_of_new_objects - rows_count
         return render(
             request,
-            "world/index.html",
+            "world/upload.html",
             {
                 "message": f"Новых записей: {change_counter}\n"
-                f"Записей в базе: {counter_of_new_objects}"
+                           f"Записей в базе: {counter_of_new_objects}"
             },
         )
 
@@ -89,7 +87,8 @@ def get_points(request):
     if radius := request.POST.get("radius"):
         radius = float(radius)
     else:
-        radius = 30
+        radius = 50
+    obj_type = LOST if request.POST.get("is-lost") else FOUND
     points_list = []
     multi_points = MultiPoint(Point(55.752071, 48.744513))
     if request.POST.get("points"):
@@ -100,18 +99,18 @@ def get_points(request):
     images = Image.objects.filter(
         point__distance_lte=(multi_points, D(m=radius)),
         date__range=[from_date, to_date],
+        type=obj_type
     ).values()
     images = list(
         [
             {
-                "id_out": image["id_out"],
-                "x": image["point"].x,
-                "y": image["point"].y,
+                "id": str(image["id"]),
+                "x": image["point"][0].x,
+                "y": image["point"][0].y,
                 "date": str(image["date"]),
                 "link": image["link"],
-                "description": image["description"]
-                if image["description"] is not None
-                else "",
+                "type": image["type"],
+                "description": image.get("description", ""),
                 "contacts": image["contacts"],
             }
             for image in images
@@ -127,46 +126,48 @@ def get_points(request):
         "message": message,
         "opencage_key": OPENCAGE_KEY,
     }
-    return render(request, "world/main.html", context)
+    return render(request, "world/search.html", context)
+
 
 @atomic
-def send_object(request):
+def send_found_object(request):
     if request.method == "POST":
-
         form = FoundObjectForm(request.POST, request.FILES)
         if form.is_valid():
             description = form.cleaned_data.get("description")
             contacts = form.cleaned_data.get("contacts")
-            body = f"Описание: {description} <br> Контакты: {contacts} <br>"
             point: Point = form.cleaned_data.get("point")
-            if point:
-                point.transform(4326)
-                location = dict(x=point.x, y=point.y)
-                body += f"Координаты: {location}"
-
+            date = form.cleaned_data.get("date")
+            email = form.cleaned_data.get('email')
             file = form.files.get("image_file")
 
+            type = FOUND
+            point.transform(4326)
+            multi_point = MultiPoint(point)
             obj = Image(
                 contacts=contacts,
                 description=description,
-                point=point,
+                point=multi_point,
                 image_file=file,
+                date=date,
+                email=email,
+                type=type,
             )
-            
-            obj.save()
-            obj.link=(".."+obj.image_file.url) # TODO: Сделать по-человечески
-            obj.save()
 
+            obj.save()
+            obj.link = (".." + obj.image_file.url)
+            obj.save()
 
             if IS_SEND_EMAIL:
+                body = f"UUID объекта: {obj.id}"
                 send_email(subject='Найден новый объект',
-                        body=body, fp=file,
-                        sender_email=SENDER_EMAIL,
-                        receiver_email=RECEIVER_EMAIL,
-                        password=EMAIL_PASSWORD)
+                           body=body, fp=file,
+                           sender_email=SENDER_EMAIL,
+                           receiver_email=RECEIVER_EMAIL,
+                           password=EMAIL_PASSWORD)
             return HttpResponse(
                 content="Ваше сообщение отправлено администраторам, "
-                "спасибо за бдительность!"
+                        "спасибо за бдительность!"
             )
         else:
             return HttpResponseBadRequest(
@@ -178,48 +179,90 @@ def send_object(request):
         return render(request, "world/send.html", {"form": form})
 
 
-def get_location(request, id_out):
-    if request.method == "GET":
-        return render(
-            request,
-            "world/location.html",
-            dict(opencage_key=OPENCAGE_KEY, id_out=id_out),
-        )
+@atomic
+def send_lost_object(request):
+    form = LostObjectForm(request.POST, request.FILES)
+
     if request.method == "POST":
-        if request.POST.get("point"):
-            point = json.loads(request.POST.get("point"))
-            body = f"ID объекта: {id_out}<br>X = {point[0]}  Y = {point[1]}"
+
+        if form.is_valid():
+            description = form.cleaned_data.get("description")
+            contacts = form.cleaned_data.get("contacts")
+            multi_point: MultiPoint = form.cleaned_data.get("multi_point")
+            date = form.cleaned_data.get("date")
+            email = form.cleaned_data.get('email')
+            radius = form.cleaned_data.get("radius")
+
+            file = form.files.get("image_file")
+
+            type = LOST
+            multi_point.transform(4326)
+
+            obj = Image(
+                contacts=contacts,
+                description=description,
+                point=multi_point,
+                image_file=file,
+                date=date,
+                email=email,
+                type=type,
+                radius=radius
+            )
+
+            obj.save()
+            obj.link = (".." + obj.image_file.url)
+            obj.save()
+
             send_email(
-                subject="Получены новые координаты",
-                body=body,
+                subject='Ваше объявление скоро будет добавлено',
+                body=f'Ссылка на личный кабинет: {obj.id}',
                 sender_email=SENDER_EMAIL,
-                receiver_email=RECEIVER_EMAIL,
+                receiver_email=obj.email,
                 password=EMAIL_PASSWORD,
             )
+
+            if IS_SEND_EMAIL:
+                body = f"UUID объекта: {obj.id}"
+                send_email(subject='Найден новый объект',
+                           body=body,
+                           sender_email=SENDER_EMAIL,
+                           receiver_email=RECEIVER_EMAIL,
+                           password=EMAIL_PASSWORD)
             return HttpResponse(
-                content="Координаты отправлены администратору, "
-                "спасибо за бдительность!"
+                content="Ваше сообщение отправлено администраторам, "
+                        "спасибо за бдительность!"
             )
-        return render(
-            request,
-            "world/location.html",
-            dict(opencage_key=OPENCAGE_KEY, id_out=id_out),
-        )
+        else:
+            return HttpResponseBadRequest(
+                "Ошибка при отправке сообщения. Повторите попытку позже"
+            )
+
+    else:
+        form = LostObjectForm()
+        return render(request, "world/send.html", {"form": form})
 
 
 @login_required(login_url="/admin")
-def index(request):
+def upload(request):
     if request.method == "GET":
-        return render(request, "world/index.html", {})
+        return render(request, "world/upload.html", {})
     if request.method == "POST":
         return upload_points(request)
 
 
 @csrf_exempt
-def main(request):
+def search(request):
     if request.method == "GET":
         return render(
-            request, "world/main.html", dict(opencage_key=OPENCAGE_KEY, images=[])
+            request, "world/search.html",
+            dict(opencage_key=OPENCAGE_KEY, images=[])
         )
     if request.method == "POST":
         return get_points(request)
+
+
+def index(request):
+    return render(
+        request, "world/index.html",
+        dict(opencage_key=OPENCAGE_KEY, images=[])
+    )

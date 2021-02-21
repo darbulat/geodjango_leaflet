@@ -26,6 +26,9 @@
   </head>
 
   <body>
+    • <a href="/lost">Вы потеряли</a>
+    • <a href="/found">Вы нашли</a>
+    • <a href=""> Ваше объявление</a>
     <div id="map"></div>
     <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/js/L.Control.OpenCageSearch.min.js"></script>
@@ -89,6 +92,8 @@
         {% else %}
     <input id="radius" name="radius" type="number" step="any" class="query-search" value=30 size="5"><br>
         {% endif %}
+    <label for="is-lost">Искать потерянные:</label>
+    <input id="is-lost" name="is-lost" type="checkbox" step="any" class="query-search" size="5"><br>
     <label for="from_date">Начало:</label>
     {% if from_date %}
     <input id="from_date" name="from_date" type="date" value={{ from_date }} class="query-search" placeholder="Дата начала"><br>
@@ -105,7 +110,6 @@
     <input class="btn btn-primary" type="submit" id="send-points-to-django-button" value="Найти">
     </form>
   <br>
-  <a href="/found">Если нашли потерянную вещь</a>
 <br>
 <b>{{ message }}</b>
     <br>

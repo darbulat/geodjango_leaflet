@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Загрузка данных</title>
+    </head>
+    <body>
+
+
+    <h1>Страница загрузки данных</h1>
+    <b>Необходимо загружать файл с расширением .csv с разделителем ";"</b><br>
+    <form action={% url 'upload' %} method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="csv_file" />
+        <input type="submit" value="Загрузить">
+    </form>
+    <br>
+    <br>
+    {{ message }}
+    </body>
+</html>
