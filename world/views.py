@@ -110,6 +110,7 @@ def get_points(request):
                 "date": str(image["date"]),
                 "link": image["link"],
                 "type": image["type"],
+                "active": str(image["active"]),
                 "description": image.get("description", ""),
                 "contacts": image["contacts"],
             }
@@ -141,7 +142,7 @@ def send_found_object(request):
             email = form.cleaned_data.get('email')
             file = form.files.get("image_file")
 
-            type = FOUND
+            obj_type = FOUND
             point.transform(4326)
             multi_point = MultiPoint(point)
             obj = Image(
@@ -151,7 +152,7 @@ def send_found_object(request):
                 image_file=file,
                 date=date,
                 email=email,
-                type=type,
+                type=obj_type,
             )
 
             obj.save()
@@ -195,7 +196,7 @@ def send_lost_object(request):
 
             file = form.files.get("image_file")
 
-            type = LOST
+            obj_type = LOST
             multi_point.transform(4326)
 
             obj = Image(
@@ -205,7 +206,7 @@ def send_lost_object(request):
                 image_file=file,
                 date=date,
                 email=email,
-                type=type,
+                type=obj_type,
                 radius=radius
             )
 

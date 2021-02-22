@@ -8,7 +8,6 @@ class FoundObjectForm(forms.ModelForm):
         widget=forms.OSMWidget(
             attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}
         ),
-        required=False,
         label='Координаты',
     )
 
@@ -28,7 +27,6 @@ class LostObjectForm(forms.ModelForm):
         widget=forms.OSMWidget(
             attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}
         ),
-        required=False,
         label='Координаты',
     )
 

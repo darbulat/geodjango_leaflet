@@ -61,9 +61,16 @@
 
     for (image of images_) {
         var marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
-        marker.bindPopup(
-            "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
-        ).openPopup();
+        debugger
+        if (image.active == "True") {
+            marker.bindPopup(
+                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
+            ).openPopup();
+        } else {
+            marker.bindPopup(
+                "Объявление находится на модерации"
+            ).openPopup();
+        }
     }
     if (images_.length > 0) {
         map.setView([image.y, image.x], 18);
@@ -115,20 +122,22 @@
     <br>
     <br>
 {% for image in images %}
-    <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
-        {% if image.link %}
-          <img src={{ image.link }} alt="{{ image.link }}"><br>
-        {% else %}
-          <img src={{ image.image_file.url }} alt="{{ image.image_file.url }}"><br>
+    {% if image.active == 'True' %}
+        <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
+            {% if image.link %}
+              <img src={{ image.link }} alt="{{ image.link }}"><br>
+            {% else %}
+              <img src={{ image.image_file.url }} alt="{{ image.image_file.url }}"><br>
+            {% endif %}
+        </a><br>
+        {{ image.description }}
+        <br>
+        {% if image.contacts %}
+            {{ image.contacts }}
+            <br>
         {% endif %}
-    </a><br>
-    {{ image.description }}
-    <br>
-    {% if image.contacts %}
-        <a target="_blank" rel="noopener noreferrer" href={{ image.contacts }}>{{ image.contacts }}</a>
-        <br>
+            <br>
     {% endif %}
-        <br>
 
 {% endfor %}
   </body>
