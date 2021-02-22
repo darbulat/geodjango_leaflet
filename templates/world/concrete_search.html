@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>Lost & Found</title>
+    <link rel="stylesheet" href="//unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/css/L.Control.OpenCageData.Search.min.css" />
+
+    <style type="text/css">
+        img {
+          border: 1px solid #ddd; /* Gray border */
+          border-radius: 4px;  /* Rounded border */
+          padding: 5px; /* Some padding */
+          width: 150px; /* Set a small width */
+        }
+
+        /* Add a hover effect (blue shadow) */
+        img:hover {
+          box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+        }
+        html, body, #map {
+            height: 80%;
+        }
+    </style>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  </head>
+
+  <body>
+    • <a href="/">Главное</a>
+    • <a href="/lost">Вы потеряли</a>
+    • <a href="/found">Вы нашли</a>
+    • <a href="update">Редактировать</a>
+    • <a href="delete">Удалить</a>
+    • <a href=""> Ваше объявление</a>
+    <div id="map"></div>
+    <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/js/L.Control.OpenCageSearch.min.js"></script>
+    <script>
+        var map = L.map('map', {doubleClickZoom: false});
+        var options = {
+          key: '{{ opencage_key }}',
+          limit: 10,
+        };
+        var miniIcon = L.icon({
+            iconUrl: '../media/point.png',
+            iconSize:     [8, 8],
+            iconAnchor:   [10, 4],
+            popupAnchor:  [0, 0]
+        });
+        var found_images = {{ found_images | safe }}
+        var lost_points = {{ lost_points | safe }}
+        var radius = {{ radius | safe }}
+        var markerGroup = L.layerGroup().addTo(map);
+
+        L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        for (image of lost_points) {
+            var circle = L.circle([image.y, image.x], {
+                color: 'blue',
+                fillColor: '#308efd',
+                fillOpacity: 0.1,
+                radius: radius
+            }).addTo(map);
+
+        }
+        for (image of found_images) {
+            var marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
+            debugger
+            if (image.active === "True") {
+                marker.bindPopup(
+                    "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
+                ).openPopup();
+            } else {
+                marker.bindPopup(
+                    "Объявление находится на модерации"
+                ).openPopup();
+            }
+        }
+        if (found_images.length > 0) {
+            map.setView([image.y, image.x], 18);
+        } else {
+            map.locate({setView: true, maxZoom: 18});
+        }
+
+    </script>
+  <br>
+<br>
+<b>{{ message }}</b>
+    <br>
+    <br>
+{% for image in found_images %}
+    {% if image.active == 'True' %}
+        <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
+            {% if image.link %}
+              <img src={{ image.link }} alt="{{ image.link }}"><br>
+            {% else %}
+              <img src={{ image.image_file.url }} alt="{{ image.image_file.url }}"><br>
+            {% endif %}
+        </a><br>
+        {{ image.description }}
+        <br>
+        {% if image.contacts %}
+            {{ image.contacts }}
+            <br>
+        {% endif %}
+            <br>
+    {% endif %}
+
+{% endfor %}
+  </body>
+
+</html>

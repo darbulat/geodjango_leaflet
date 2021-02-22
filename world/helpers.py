@@ -1,7 +1,12 @@
+import datetime
 from collections import defaultdict
-from typing import Tuple
+from typing import Tuple, List, Dict
 
 from django.apps import apps
+from django.contrib.gis.geos import MultiPoint
+from django.contrib.gis.measure import D
+
+from world.models import Image, FOUND
 
 
 class BulkCreateManager(object):
@@ -66,3 +71,14 @@ def get_declension(number, word):
     if 2 <= last_number <= 4:
         return declensions_dict[word][1]
     return declensions_dict[word][2]
+
+
+def get_found_objects(lost_date: datetime.date, multi_point: MultiPoint, radius: float
+                      ) -> List[Dict]:
+
+    images = Image.objects.filter(
+        point__distance_lte=(multi_point, D(m=radius)),
+        date__gte=lost_date,
+        type=FOUND
+    ).values('point', 'date', 'link', 'contacts', 'description', 'type', 'active')
+    return list(images)

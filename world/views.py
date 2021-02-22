@@ -9,7 +9,8 @@ from django.contrib.gis.measure import D
 from django.db.transaction import atomic
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from django.views import View
+from django.views.generic import UpdateView, DeleteView, TemplateView
 
 from djangoProject.settings import (
     EMAIL_PASSWORD,
@@ -19,16 +20,17 @@ from djangoProject.settings import (
     IS_SEND_EMAIL,
 )
 from world.forms import FoundObjectForm, LostObjectForm
-from world.helpers import BulkCreateManager, parse_date_from_str, get_declension
+from world.helpers import BulkCreateManager, parse_date_from_str, \
+    get_declension, get_found_objects
 from world.models import Image, FOUND, LOST
 from world.notifications import send_email
 
 
+@login_required(login_url="/admin")
 @atomic
 def upload_points(request):
-    if request.FILES["csv_file"]:
+    if file := request.FILES.get("csv_file"):
 
-        file = request.FILES["csv_file"]
         csv_file = file.read().decode("utf-8")
         reader = csv.reader(io.StringIO(csv_file), delimiter=";", quotechar="|")
         bulk_mgr = BulkCreateManager(chunk_size=20)
@@ -75,6 +77,7 @@ def get_message(n: int):
     return f'Найдено {n} {get_declension(n, "объект")}'
 
 
+@login_required(login_url="/admin")
 def get_points(request):
     if from_date_str := request.POST.get("from_date"):
         from_date = datetime.date.fromisoformat(from_date_str)
@@ -130,6 +133,7 @@ def get_points(request):
     return render(request, "world/search.html", context)
 
 
+@login_required(login_url="/admin")
 @atomic
 def send_found_object(request):
     if request.method == "POST":
@@ -180,6 +184,7 @@ def send_found_object(request):
         return render(request, "world/send.html", {"form": form})
 
 
+@login_required(login_url="/admin")
 @atomic
 def send_lost_object(request):
     form = LostObjectForm(request.POST, request.FILES)
@@ -251,7 +256,7 @@ def upload(request):
         return upload_points(request)
 
 
-@csrf_exempt
+@login_required(login_url="/admin")
 def search(request):
     if request.method == "GET":
         return render(
@@ -262,8 +267,59 @@ def search(request):
         return get_points(request)
 
 
+@login_required(login_url="/admin")
 def index(request):
     return render(
         request, "world/index.html",
         dict(opencage_key=OPENCAGE_KEY, images=[])
     )
+
+
+@login_required(login_url="/admin")
+def detail_object(request):
+    return render(request, "world/image_form.html", dict())
+
+
+class ImageUpdate(UpdateView):
+
+    model = Image
+    fields = ['date', 'contacts', 'email', 'radius', 'description']
+
+
+class ImageDelete(DeleteView):
+
+    model = Image
+
+
+class ImageIntersect(View):
+
+    def get(self, request, *args, **kwargs):
+        message = "Здесь будут найденные вещи, которые вы могли потерять"
+        image_id = kwargs.get('pk')
+        lost_obj = Image.objects.get(pk=image_id)
+        radius = lost_obj.radius
+        lost_points = list(dict(x=point.x, y=point.y) for point in lost_obj.point)
+        found_images = get_found_objects(
+            lost_date=lost_obj.date,
+            multi_point=lost_obj.point,
+            radius=radius
+        )
+
+        for image in found_images:
+            image.update(
+                x=image.get('point')[0].x,
+                y=image.get('point')[0].y,
+                date=str(image.get('date')),
+                active=str(image.get('active'))
+            )
+            del image['point']
+        if found_images:
+            message = get_message(len(found_images))
+        context = {
+            "message": message,
+            "found_images": found_images,
+            "lost_points": lost_points,
+            "opencage_key": OPENCAGE_KEY,
+            "radius": radius,
+        }
+        return render(request, "world/concrete_search.html", context)

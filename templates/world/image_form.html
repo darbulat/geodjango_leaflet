@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ваше объявление</title>
+   {{ form.media }}
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    {% load crispy_forms_tags %}
+    {% load bootstrap4 %}
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+
+</head>
+<body>
+    • <a href="/">Главное</a>
+    • <a href="/lost">Вы потеряли</a>
+    • <a href="/found">Вы нашли</a>
+    • <a href=""> Ваше объявление</a>
+    <form method="post">{% csrf_token %}
+        {{ form | crispy }}
+        <input type="submit" value="Обновить">
+    </form>
+     <script>
+          var location_options = {
+              enableHighAccuracy: true,
+              timeout: 5000,
+              maximumAge: 0
+            };
+
+            function success(pos) {
+                debugger
+                var crd = pos.coords;
+                options['default_lon'] = crd.longitude;
+                options['default_lat'] = crd.latitude;
+                options['default_zoom'] = 12;
+                geodjango_point.options = options
+                geodjango_point.map.getView().setCenter(geodjango_point.defaultCenter());
+            }
+
+            function error(err) {
+                 console.warn(`ERROR(${err.code}): ${err.message}`);
+            }
+
+            navigator.geolocation.getCurrentPosition(success, error, location_options);
+      </script>
+</body>
+</html>
