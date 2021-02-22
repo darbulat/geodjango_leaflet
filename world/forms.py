@@ -1,9 +1,11 @@
+from captcha.fields import CaptchaField
 from django.contrib.gis import forms
 
 from world.models import Image
 
 
 class FoundObjectForm(forms.ModelForm):
+    captcha = CaptchaField()
     point = forms.PointField(
         widget=forms.OSMWidget(
             attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}
@@ -23,6 +25,7 @@ class FoundObjectForm(forms.ModelForm):
 
 
 class LostObjectForm(forms.ModelForm):
+    captcha = CaptchaField()
     multi_point = forms.MultiPointField(
         widget=forms.OSMWidget(
             attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}

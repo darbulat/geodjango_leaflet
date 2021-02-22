@@ -221,7 +221,7 @@ def send_lost_object(request):
 
             send_email(
                 subject='Ваше объявление скоро будет добавлено',
-                body=f'Ссылка на личный кабинет: {obj.id}',
+                body=f'Ссылка на личный кабинет: <a href="loforoll.com/{obj.id}">{obj.id}</a>',
                 sender_email=SENDER_EMAIL,
                 receiver_email=obj.email,
                 password=EMAIL_PASSWORD,
@@ -235,8 +235,8 @@ def send_lost_object(request):
                            receiver_email=RECEIVER_EMAIL,
                            password=EMAIL_PASSWORD)
             return HttpResponse(
-                content="Ваше сообщение отправлено администраторам, "
-                        "спасибо за бдительность!"
+                content=f"Ваше сообщение отправлено на модерацию\n"
+                        f"<a href='/{obj.id}'>ссылка</a> для вашего объявления"
             )
         else:
             return HttpResponseBadRequest(

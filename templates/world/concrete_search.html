@@ -55,6 +55,7 @@
         L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
           attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
+
         for (image of lost_points) {
             var circle = L.circle([image.y, image.x], {
                 color: 'blue',
@@ -62,7 +63,7 @@
                 fillOpacity: 0.1,
                 radius: radius
             }).addTo(map);
-
+            map.setView([image.y, image.x], 15);
         }
         for (image of found_images) {
             var marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
@@ -77,12 +78,6 @@
                 ).openPopup();
             }
         }
-        if (found_images.length > 0) {
-            map.setView([image.y, image.x], 18);
-        } else {
-            map.locate({setView: true, maxZoom: 18});
-        }
-
     </script>
   <br>
 <br>

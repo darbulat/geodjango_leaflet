@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'world',
     'bootstrap4',
     'crispy_forms',
+    'captcha',
 ]
 
 MIDDLEWARE = [
