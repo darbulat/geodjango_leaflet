@@ -5,6 +5,7 @@ from typing import Tuple, List, Dict
 from django.apps import apps
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
+from django.db.models.sql import Query
 
 from world.models import Image, FOUND
 
@@ -73,12 +74,17 @@ def get_declension(number, word):
     return declensions_dict[word][2]
 
 
-def get_found_objects(lost_date: datetime.date, multi_point: MultiPoint, radius: float
-                      ) -> List[Dict]:
-
-    images = Image.objects.filter(
+def get_found_objects(lost_date: datetime.date,
+                      multi_point: MultiPoint,
+                      radius: float,
+                      fields: list,
+                      active: bool = None) -> List[Dict]:
+    query = dict(
         point__distance_lte=(multi_point, D(m=radius)),
         date__gte=lost_date,
         type=FOUND
-    ).values('point', 'date', 'link', 'contacts', 'description', 'type', 'active')
+    )
+    if active is not None:
+        query.update(active=active)
+    images = Image.objects.filter(**query).values(*fields)
     return list(images)

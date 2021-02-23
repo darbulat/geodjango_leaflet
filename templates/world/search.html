@@ -27,9 +27,10 @@
 
   <body>
     • <a href="/">Главное</a>
+    • <a href="/search">Искать вещи</a>
     • <a href="/lost">Вы потеряли</a>
     • <a href="/found">Вы нашли</a>
-    • <a href=""> Ваше объявление</a>
+    • <a href="/my"> Ваше объявление</a>
     <div id="map"></div>
     <script src="//unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/opencagedata/leaflet-opencage-search@1.4.1/dist/js/L.Control.OpenCageSearch.min.js"></script>
@@ -65,7 +66,7 @@
         debugger
         if (image.active == "True") {
             marker.bindPopup(
-                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.link + "><img src=" + image.link + "></img></a>"
+                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.image_url + "><img src=" + image.image_url + "/></a>"
             ).openPopup();
         } else {
             marker.bindPopup(
@@ -124,12 +125,8 @@
     <br>
 {% for image in images %}
     {% if image.active == 'True' %}
-        <a target="_blank" rel="noopener noreferrer" href={{ image.link }}>
-            {% if image.link %}
-              <img src={{ image.link }} alt="{{ image.link }}"><br>
-            {% else %}
-              <img src={{ image.image_file.url }} alt="{{ image.image_file.url }}"><br>
-            {% endif %}
+        <a target="_blank" rel="noopener noreferrer" href={{ image.image_url }}>
+              <img src={{ image.image_url }} alt="{{ image.image_url }}"><br>
         </a><br>
         {{ image.description }}
         <br>

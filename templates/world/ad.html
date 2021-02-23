@@ -10,9 +10,13 @@
     • <a href="/lost">Вы потеряли</a>
     • <a href="/found">Вы нашли</a>
     • <a href="/my"> Ваше объявление</a>
+    <br><br>
     <form method="post">{% csrf_token %}
-        Вы действительно хотите удалить свое оъявление?
-        <input type="submit" value="Удалить">
+        Введите UUID вашего объявления
+        <input type="text" name="uuid">
+        <input type="submit" value="Отправить">
     </form>
+    <br>
+    {{ message }}
 </body>
 </html>
