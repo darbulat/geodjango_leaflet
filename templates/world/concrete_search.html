@@ -49,6 +49,7 @@
             popupAnchor:  [0, 0]
         });
         var found_images = {{ found_images | safe }}
+        var new_images = {{ new_images | safe }}
         var lost_points = {{ lost_points | safe }}
         var radius = {{ radius | safe }}
         var markerGroup = L.layerGroup().addTo(map);
@@ -80,12 +81,47 @@
                 ).openPopup();
             }
         }
+        for (image of new_images) {
+            marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
+            debugger
+            if (image.active === "True") {
+                marker.bindPopup(
+                    "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.image_url + "><img src=" + image.image_url + "></img></a>" +
+                    "<br>" + image.description + "<br>" + image.contacts
+                ).openPopup();
+            } else {
+                marker.bindPopup(
+                    "Объявление находится на модерации"
+                ).openPopup();
+            }
+        }
     </script>
   <br>
 <br>
 <b>{{ message }}</b>
     <br>
     <br>
+Новые объявления:
+<br>
+{% for image in new_images %}
+    {% if image.active == 'True' %}
+        <a target="_blank" rel="noopener noreferrer" href={{ image.image_url }}>
+              <img src={{ image.image_url }} alt="{{ image.image_url }}"><br>
+        </a><br>
+        {{ image.description }}
+        <br>
+        {% if image.contacts %}
+            {{ image.contacts }}
+            <br>
+        {% endif %}
+            <br>
+    {% endif %}
+<br>
+{% endfor %}
+<br>
+Просмотренные объявления
+<br>
+
 {% for image in found_images %}
     {% if image.active == 'True' %}
         <a target="_blank" rel="noopener noreferrer" href={{ image.image_url }}>

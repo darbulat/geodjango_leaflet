@@ -153,3 +153,4 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 IS_SEND_EMAIL = int(os.environ.get("IS_SEND_EMAIL", 0))
 SITE = env('SITE')
+LOGIN_URL = '/admin/'

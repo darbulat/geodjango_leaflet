@@ -1,7 +1,7 @@
 import datetime
 import os
 from tempfile import NamedTemporaryFile
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Any, Union
 from urllib.request import urlopen
 
 from django.contrib.gis import forms
@@ -9,12 +9,12 @@ from django.contrib.gis.db import models
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
 from django.core.files import File
+from django.db.models import Q
 from django.utils import timezone
 
 import uuid
 
 from djangoProject import settings
-from world import constants
 
 LOST = 'lost'
 FOUND = 'found'
@@ -22,9 +22,6 @@ FOUND = 'found'
 
 class AbstractUUID(models.Model):
     """ Абстрактная модель для использования UUID в качестве PK."""
-
-    # Параметр blank=True позволяет работать с формами, он никогда не
-    # будет пустым, см. метод save()
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
@@ -97,19 +94,48 @@ class Image(AbstractUUID):
         images = cls.objects.filter(**query).values(*fields)
         return list(images)
 
-    def get_intersected_objects(self, active: bool = None, fields: list = ()):
+    def get_intersected_objects(self, active: bool = None,
+                                fields: list = (),
+                                seen: bool = False) -> Union[Tuple[Any, Any], list]:
         query = dict(
             point__distance_lte=(self.point, D(m=self.radius)),
-            date__gte=self.date,
         )
-        query.update(type=LOST if self.type == FOUND else FOUND)
+        yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
+        if self.type == LOST:
+            query.update(type=FOUND, date__gte=self.date)
+            intersected_images = LostFound.objects.filter(
+                lost_id=self.pk, seen__lte=yesterday, seen__isnull=False
+            ).values_list('found_id', flat=True)
+        else:
+            query.update(type=LOST)
+            intersected_images = LostFound.objects.filter(
+                found_id=self.pk,
+                seen__lte=yesterday
+            ).values_list('lost_id', flat=True)
         if active is not None:
             query.update(active=active)
-        images = Image.objects.filter(**query).values(*fields)
-        return list(images)
+        if seen:
+            new_images = Image.objects.filter(
+                **query
+            ).exclude(
+                id__in=intersected_images
+            ).order_by('date').values(*fields)
+            images = Image.objects.filter(
+                id__in=intersected_images,
+                **query
+            ).order_by('date').values(*fields)
+            return list(images), list(new_images)
+        else:
+            images = Image.objects.filter(
+                **query).order_by('date').values(*fields)
+            return list(images)
 
 
 class LostFound(models.Model):
     lost = models.ForeignKey(Image, on_delete=models.CASCADE, related_name=LOST)
     found = models.ForeignKey(Image, on_delete=models.CASCADE,
                               related_name=FOUND)
+    seen = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = (("lost", "found"),)

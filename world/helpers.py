@@ -94,3 +94,25 @@ def get_message(n: int):
     if n == 1:
         return f'Найден {n} {get_declension(n, "объект")}'
     return f'Найдено {n} {get_declension(n, "объект")}'
+
+
+def update_images_for_context(images: List) -> Tuple:
+    not_active_image_count = 0
+
+    for image in images:
+        if not image.get('active'):
+            not_active_image_count += 1
+        image.update(
+            x=image.get('point')[0].x,
+            y=image.get('point')[0].y,
+            date=str(image.get('date')),
+            active=str(image.get('active'))
+        )
+        if not image.get('contacts'):
+            image.update(contacts='')
+        if 'point' in image:
+            del image['point']
+        if 'pk' in image:
+            del image['pk']
+
+    return len(images), not_active_image_count

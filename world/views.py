@@ -22,8 +22,8 @@ from djangoProject.settings import (
     IS_SEND_EMAIL,
 )
 from world.forms import FoundObjectForm, LostObjectForm
-from world.helpers import parse_date_from_str, get_declension, \
-    get_found_objects, get_message
+from world.helpers import parse_date_from_str, get_message, \
+    update_images_for_context
 from world.models import Image, FOUND, LOST, LostFound
 from world.notifications import send_email
 
@@ -106,21 +106,8 @@ def get_search_context(radius, obj_type=None, from_date=None,
         kwargs.update(to_date=datetime.date.fromisoformat(to_date))
     images = Image.get_objects(**kwargs)
 
-    not_active_image_count = 0
-    for image in images:
-        if not image.get('active'):
-            not_active_image_count += 1
-        image.update(
-            x=image.get('point')[0].x,
-            y=image.get('point')[0].y,
-            date=str(image.get('date')),
-            active=str(image.get('active'))
-        )
-        if not image.get('contacts'):
-            image.update(contacts='')
-        del image['point']
+    image_count, not_active_image_count = update_images_for_context(images)
 
-    image_count = len(images)
     message = get_message(image_count)
     message = message + f' из них на модерации: {not_active_image_count}'
     return {
@@ -283,10 +270,10 @@ class ImageDelete(DeleteView):
 class ImageIntersect(View):
 
     def get(self, request, *args, **kwargs):
-        message = "Здесь будут найденные вещи, которые вы могли потерять"
         image_id = kwargs.get('pk')
         lost_obj = Image.objects.filter(pk=image_id).first()
         found_images = []
+        new_images = []
         radius = 50
         lost_points = []
         if not lost_obj:
@@ -296,32 +283,42 @@ class ImageIntersect(View):
             lost_points = list(
                 dict(x=point.x, y=point.y) for point in lost_obj.point)
             fields = ['point', 'date', 'image_url', 'contacts', 'description',
-                      'type', 'active']
-            found_images = lost_obj.get_intersected_objects(fields=fields)
-            not_active_image_count = 0
-            for image in found_images:
-                if not image.get('active'):
-                    not_active_image_count += 1
-                image.update(
-                    x=image.get('point')[0].x,
-                    y=image.get('point')[0].y,
-                    date=str(image.get('date')),
-                    active=str(image.get('active'))
-                )
-                del image['point']
+                      'type', 'active', 'pk']
+            found_images, new_images = lost_obj.get_intersected_objects(
+                fields=fields,
+                seen=True,
+                active=True,
+            )
+            new_image_ids = [found.get('pk') for found in new_images]
+            update_lost_and_found(lost_ids=[lost_obj.pk], found_ids=new_image_ids, seen=True)
+            image_count, not_active_image_count = update_images_for_context(found_images)
+            new_image_count, new_not_active_image_count = update_images_for_context(new_images)
+            message = get_message(image_count+new_image_count)
+            message = message + f' из них на модерации: {not_active_image_count+new_not_active_image_count}'
 
-            if found_images:
-                image_count = len(found_images)
-                message = get_message(image_count)
-                message = message + f'из них на модерации: {not_active_image_count}'
         context = {
             "message": message,
+            "new_images": new_images,
             "found_images": found_images,
             "lost_points": lost_points,
             "opencage_key": OPENCAGE_KEY,
             "radius": radius,
         }
         return render(request, "world/concrete_search.html", context)
+
+
+def update_lost_and_found(lost_ids, found_ids, seen: bool = False) -> None:
+    lost_found_list = list(
+        LostFound(lost_id=lost, found_id=found)
+        for found in found_ids for lost in lost_ids
+    )
+    LostFound.objects.bulk_create(lost_found_list, ignore_conflicts=True)
+
+    if seen:
+        seen_datetime = datetime.datetime.now()
+        LostFound.objects.filter(
+            found_id__in=found_ids, lost_id__in=lost_ids, seen__isnull=True
+        ).update(seen=seen_datetime)
 
 
 @method_decorator(login_required, name='get')
@@ -349,10 +346,7 @@ class SendNotifications(TemplateView):
                     receiver_email=email,
                     password=EMAIL_PASSWORD,
                 )
-                lost_found_list = list(
-                    LostFound(lost_id=lost.pk, found_id=found) for found in
-                    diff_found_set)
-                LostFound.objects.bulk_create(lost_found_list)
+                update_lost_and_found(lost_ids=[lost.pk], found_ids=diff_found_set)
         message = f'Уведомления отправлены - {count_notification}'
         context = dict(message=message)
         return render(request, self.template_name, context)
