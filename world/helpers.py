@@ -88,3 +88,9 @@ def get_found_objects(lost_date: datetime.date,
         query.update(active=active)
     images = Image.objects.filter(**query).values(*fields)
     return list(images)
+
+
+def get_message(n: int):
+    if n == 1:
+        return f'Найден {n} {get_declension(n, "объект")}'
+    return f'Найдено {n} {get_declension(n, "объект")}'

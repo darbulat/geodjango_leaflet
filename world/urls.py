@@ -3,10 +3,10 @@ from django.urls import path
 from world import views
 
 urlpatterns = [
-    path('upload/', views.upload, name='upload'),
+    path('upload/', views.BulkUpload.as_view(), name='upload'),
     path('found/', views.send_found_object, name='found'),
     path('lost/', views.send_lost_object, name='lost'),
-    path('search/', views.search, name='search'),
+    path('search/', views.SearchPoints.as_view(), name='search'),
     path('send_notifications/', views.SendNotifications.as_view(), name='send_notifications'),
     path('my/', views.MyAd.as_view(), name='my_ad'),
     path('<uuid:pk>/', views.ImageIntersect.as_view(), name='image_intersect'),

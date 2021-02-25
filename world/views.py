@@ -2,20 +2,18 @@ import csv
 import datetime
 import io
 import json
-import requests
-
-from PIL import Image as PILImage
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import Point, MultiPoint
-from django.contrib.gis.measure import D
 from django.db import IntegrityError
 from django.db.transaction import atomic
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect
+from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import UpdateView, DeleteView, TemplateView
 
+from djangoProject import settings
 from djangoProject.settings import (
     EMAIL_PASSWORD,
     RECEIVER_EMAIL,
@@ -24,28 +22,32 @@ from djangoProject.settings import (
     IS_SEND_EMAIL,
 )
 from world.forms import FoundObjectForm, LostObjectForm
-from world.helpers import BulkCreateManager, parse_date_from_str, \
-    get_declension, get_found_objects
+from world.helpers import parse_date_from_str, get_declension, \
+    get_found_objects, get_message
 from world.models import Image, FOUND, LOST, LostFound
 from world.notifications import send_email
 
 
-@login_required(login_url="/admin")
-@atomic
-def upload_points(request):
-    message = ''
-    if file := request.FILES.get("csv_file"):
+@method_decorator(login_required, name='get')
+class BulkUpload(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, "world/upload.html", {})
 
-        csv_file = file.read().decode("utf-8")
-        reader = csv.reader(io.StringIO(csv_file), delimiter=";", quotechar="|")
-        counter_of_new_objects = 0
-        try:
-            for lat, long, date, image_url, description, contacts, email in reader:
-                try:
-                    year, month, day = parse_date_from_str(date)
-                    date = datetime.date(year=year, month=month, day=day)
-                    point = MultiPoint(Point(x=float(long), y=float(lat)))
-                    image = Image(
+    def post(self, request, *args, **kwargs):
+        message = ''
+        if file := request.FILES.get("csv_file"):
+
+            csv_file = file.read().decode("utf-8")
+            reader = csv.reader(io.StringIO(csv_file), delimiter=";",
+                                quotechar="|")
+            counter_of_new_objects = 0
+            try:
+                for lat, long, date, image_url, description, contacts, email in reader:
+                    try:
+                        year, month, day = parse_date_from_str(date)
+                        date = datetime.date(year=year, month=month, day=day)
+                        point = MultiPoint(Point(x=float(long), y=float(lat)))
+                        image = Image(
                             point=point,
                             date=date,
                             image_url=image_url,
@@ -54,94 +56,110 @@ def upload_points(request):
                             type=FOUND,
                             email=email,
                         )
-                    image.save()
-                    counter_of_new_objects += 1
-                except ValueError:
-                    pass
-                except IntegrityError:
-                    message = "Вы пытаетесь загрузить объекты с " \
-                              "одинаковыми координатами, \n" \
-                              "исправьте координаты и повторите загрузку"
-                    break
-                except Exception as e:
-                    message = str(e)
-                    break
-        except ValueError:
-            pass
-        if not message:
-            message = f"Новых записей: {counter_of_new_objects}\n"
+                        image.save()
+                        counter_of_new_objects += 1
+                    except ValueError:
+                        pass
+                    except IntegrityError:
+                        message = "Вы пытаетесь загрузить объекты с " \
+                                  "одинаковыми координатами, \n" \
+                                  "исправьте координаты и повторите загрузку"
+                        break
+                    except Exception as e:
+                        message = str(e)
+                        break
+            except ValueError:
+                pass
+            if not message:
+                message = f"Новых записей: {counter_of_new_objects}\n"
 
-    else:
-        message = 'Необходимо прикрепить файл'
-    return render(
-        request,
-        "world/upload.html",
-        {
-            "message": message
-        },
-    )
-
-
-def get_message(n: int):
-    if n == 1:
-        return f'Найден {n} {get_declension(n, "объект")}'
-    return f'Найдено {n} {get_declension(n, "объект")}'
+        else:
+            message = 'Необходимо прикрепить файл'
+        return render(
+            request,
+            "world/upload.html",
+            {
+                "message": message
+            },
+        )
 
 
-@login_required(login_url="/admin")
-def get_points(request):
-    if from_date_str := request.POST.get("from_date"):
-        from_date = datetime.date.fromisoformat(from_date_str)
-    else:
-        from_date = datetime.date.today() - datetime.timedelta(days=2)
-    if to_date_str := request.POST.get("to_date"):
-        to_date = datetime.date.fromisoformat(to_date_str)
-    else:
-        to_date = datetime.date.today() + datetime.timedelta(days=1)
-    if radius := request.POST.get("radius"):
-        radius = float(radius)
-    else:
-        radius = 50
-    obj_type = LOST if request.POST.get("is-lost") else FOUND
+def get_search_context(radius, obj_type=None, from_date=None,
+                       to_date=None, points=None):
     points_list = []
     multi_points = MultiPoint(Point(55.752071, 48.744513))
-    if request.POST.get("points"):
-        points_list = json.loads(request.POST.get("points"))
+    if points:
+        points_list = json.loads(points)
         multi_points = MultiPoint(
             *[Point(x=long, y=lat) for long, lat in points_list], srid=4326
         )
-    images = Image.objects.filter(
-        point__distance_lte=(multi_points, D(m=radius)),
-        date__range=[from_date, to_date],
-        type=obj_type
-    ).select_related('image_file').values()
-    images = list(
-        [
-            {
-                "id": str(image["id"]),
-                "x": image["point"][0].x,
-                "y": image["point"][0].y,
-                "date": str(image["date"]),
-                "image_url": image["image_url"],
-                "type": image["type"],
-                "active": str(image["active"]),
-                "description": image.get("description", ""),
-                "contacts": image["contacts"],
-            }
-            for image in images
-        ]
+    kwargs = dict(
+        multi_point=multi_points,
+        radius=radius,
+        obj_type=obj_type,
+        fields=['point', 'active', 'date', 'image_url', 'description',
+                'contacts']
     )
-    message = get_message(len(images))
-    context = {
+    if from_date:
+        kwargs.update(from_date=datetime.date.fromisoformat(from_date))
+    if to_date:
+        kwargs.update(to_date=datetime.date.fromisoformat(to_date))
+    images = Image.get_objects(**kwargs)
+
+    not_active_image_count = 0
+    for image in images:
+        if not image.get('active'):
+            not_active_image_count += 1
+        image.update(
+            x=image.get('point')[0].x,
+            y=image.get('point')[0].y,
+            date=str(image.get('date')),
+            active=str(image.get('active'))
+        )
+        if not image.get('contacts'):
+            image.update(contacts='')
+        del image['point']
+
+    image_count = len(images)
+    message = get_message(image_count)
+    message = message + f' из них на модерации: {not_active_image_count}'
+    return {
         "images": images,
-        "from_date": from_date_str,
-        "to_date": to_date_str,
+        "from_date": from_date,
+        "to_date": to_date,
         "radius": float(radius),
         "points": points_list,
         "message": message,
         "opencage_key": OPENCAGE_KEY,
     }
-    return render(request, "world/search.html", context)
+
+
+@method_decorator(login_required, name='get')
+class SearchPoints(View):
+
+    def get(self, request, *args, **kwargs):
+        return render(
+            request, "world/search.html",
+            dict(opencage_key=OPENCAGE_KEY, images=[])
+        )
+
+    def post(self, request, *args, **kwargs):
+        from_date = request.POST.get("from_date")
+        to_date = request.POST.get("to_date")
+        if radius := request.POST.get("radius"):
+            radius = float(radius)
+        else:
+            radius = 50
+        obj_type = LOST if request.POST.get("is-lost") else FOUND
+        points = request.POST.get("points")
+        context = get_search_context(
+            radius=radius,
+            obj_type=obj_type,
+            from_date=from_date,
+            to_date=to_date,
+            points=points,
+        )
+        return render(request, "world/search.html", context)
 
 
 @login_required(login_url="/admin")
@@ -185,12 +203,12 @@ def send_found_object(request):
             )
         else:
             return HttpResponseBadRequest(
-                "Необходимо заполнить все поля"
+                "Необходимо указать координаты"
             )
 
     else:
         form = FoundObjectForm()
-        return render(request, "world/send.html", {"form": form})
+        return render(request, "world/send_found.html", {"form": form})
 
 
 @login_required(login_url="/admin")
@@ -207,28 +225,24 @@ def send_lost_object(request):
             date = form.cleaned_data.get("date")
             email = form.cleaned_data.get('email')
             radius = form.cleaned_data.get("radius")
-
             file = form.files.get("image_file")
-
             obj_type = LOST
             multi_point.transform(4326)
+            kwargs = dict(contacts=contacts,
+                          description=description,
+                          point=multi_point,
+                          date=date,
+                          email=email,
+                          type=obj_type,
+                          image_file=file,
+                          radius=radius)
 
-            obj = Image(
-                contacts=contacts,
-                description=description,
-                point=multi_point,
-                image_file=file,
-                date=date,
-                email=email,
-                type=obj_type,
-                radius=radius
-            )
-
+            obj = Image(**kwargs)
             obj.save()
 
             send_email(
                 subject='Ваше объявление скоро будет добавлено',
-                body=f'Ссылка на личный кабинет: <a href="loforoll.com/{obj.id}">{obj.id}</a>',
+                body=f'Ссылка на личный кабинет: <a href="{settings.SITE}/{obj.id}">{obj.id}</a>',
                 sender_email=SENDER_EMAIL,
                 receiver_email=obj.email,
                 password=EMAIL_PASSWORD,
@@ -247,57 +261,25 @@ def send_lost_object(request):
             )
         else:
             return HttpResponseBadRequest(
-                "Ошибка при отправке сообщения. Повторите попытку позже"
+                "Необходимо указать координаты"
             )
 
     else:
         form = LostObjectForm()
-        return render(request, "world/send.html", {"form": form})
-
-
-@login_required(login_url="/admin")
-def upload(request):
-    if request.method == "GET":
-        return render(request, "world/upload.html", {})
-    if request.method == "POST":
-        return upload_points(request)
-
-
-@login_required(login_url="/admin")
-def search(request):
-    if request.method == "GET":
-        return render(
-            request, "world/search.html",
-            dict(opencage_key=OPENCAGE_KEY, images=[])
-        )
-    if request.method == "POST":
-        return get_points(request)
-
-
-@login_required(login_url="/admin")
-def index(request):
-    return render(
-        request, "world/index.html",
-        dict(opencage_key=OPENCAGE_KEY, images=[])
-    )
-
-
-@login_required(login_url="/admin")
-def detail_object(request):
-    return render(request, "world/image_form.html", dict())
+        return render(request, "world/send_lost.html", {"form": form})
 
 
 class ImageUpdate(UpdateView):
-
     model = Image
-    fields = ['date', 'contacts', 'email', 'radius', 'description']
+    fields = ['image_file', 'point', 'date', 'contacts', 'email', 'radius',
+              'description']
 
 
 class ImageDelete(DeleteView):
-
     model = Image
 
 
+@method_decorator(login_required, name='get')
 class ImageIntersect(View):
 
     def get(self, request, *args, **kwargs):
@@ -305,16 +287,15 @@ class ImageIntersect(View):
         image_id = kwargs.get('pk')
         lost_obj = Image.objects.get(pk=image_id)
         radius = lost_obj.radius
-        lost_points = list(dict(x=point.x, y=point.y) for point in lost_obj.point)
-        fields = ['point', 'date', 'image_url', 'contacts', 'description', 'type', 'active']
-        found_images = get_found_objects(
-            lost_date=lost_obj.date,
-            multi_point=lost_obj.point,
-            radius=radius,
-            fields=fields
-        )
-
+        lost_points = list(
+            dict(x=point.x, y=point.y) for point in lost_obj.point)
+        fields = ['point', 'date', 'image_url', 'contacts', 'description',
+                  'type', 'active']
+        found_images = lost_obj.get_intersected_objects(fields=fields)
+        not_active_image_count = 0
         for image in found_images:
+            if not image.get('active'):
+                not_active_image_count += 1
             image.update(
                 x=image.get('point')[0].x,
                 y=image.get('point')[0].y,
@@ -322,8 +303,11 @@ class ImageIntersect(View):
                 active=str(image.get('active'))
             )
             del image['point']
+
         if found_images:
-            message = get_message(len(found_images))
+            image_count = len(found_images)
+            message = get_message(image_count)
+            message = message + f'из них на модерации: {not_active_image_count}'
         context = {
             "message": message,
             "found_images": found_images,
@@ -334,39 +318,41 @@ class ImageIntersect(View):
         return render(request, "world/concrete_search.html", context)
 
 
+@method_decorator(login_required, name='get')
 class SendNotifications(TemplateView):
-
     template_name = 'world/send_notifications.html'
 
     def post(self, request, *args, **kwargs):
-        lost_list = Image.objects.filter(type=LOST).values_list(
-            'pk', 'point', 'radius', 'email', 'date', named=True)
+        lost_objects = Image.objects.filter(type=LOST)
         count_notification = 0
-        for lost in lost_list:
-            multi_point = lost.point
+        for lost in lost_objects:
             email = lost.email
-            date = lost.date
-            radius = lost.radius
-            old_found_id_set = set(LostFound.objects.filter(lost=lost.pk).values_list(FOUND, flat=True))
-            found_list = get_found_objects(date, multi_point, radius, ['pk'], active=True)
+            old_found_id_set = set(
+                LostFound.objects.filter(lost=lost.pk).values_list(FOUND,
+                                                                   flat=True))
+
+            found_list = lost.get_intersected_objects(active=True, fields=['pk'])
             found_id_set = set(found['pk'] for found in found_list)
             diff_found_set = found_id_set.difference(old_found_id_set)
             if diff_found_set:
                 count_notification += 1
                 send_email(
                     subject='Найдены новые вещи',
-                    body=f'Найдены вещи соответсвующие <a href="loforoll.com/{lost.pk}">вашему объявлению</a>: {len(diff_found_set)}',
+                    body=f'Найдены вещи соответсвующие <a href="{settings.SITE}/{lost.pk}">вашему объявлению</a>: {len(diff_found_set)}',
                     sender_email=SENDER_EMAIL,
                     receiver_email=email,
                     password=EMAIL_PASSWORD,
                 )
-                lost_found_list = list(LostFound(lost_id=lost.pk, found_id=found) for found in diff_found_set)
+                lost_found_list = list(
+                    LostFound(lost_id=lost.pk, found_id=found) for found in
+                    diff_found_set)
                 LostFound.objects.bulk_create(lost_found_list)
         message = f'Уведомления отправлены - {count_notification}'
         context = dict(message=message)
         return render(request, self.template_name, context)
 
 
+@method_decorator(login_required, name='get')
 class Index(TemplateView):
     template_name = 'world/index.html'
 
@@ -378,9 +364,12 @@ class Index(TemplateView):
         yesterday = today - one_day
         last_week = today - seven_day
         last_month = today - one_month
-        last_day_count = Image.objects.filter(date__range=(yesterday, today)).count()
-        last_week_count = Image.objects.filter(date__range=(last_week, today)).count()
-        last_month_count = Image.objects.filter(date__range=(last_month, today)).count()
+        last_day_count = Image.objects.filter(
+            date__range=(yesterday, today)).count()
+        last_week_count = Image.objects.filter(
+            date__range=(last_week, today)).count()
+        last_month_count = Image.objects.filter(
+            date__range=(last_month, today)).count()
         kwargs.update(
             last_day_count=last_day_count,
             last_week_count=last_week_count,
@@ -389,6 +378,7 @@ class Index(TemplateView):
         return super().get(self, request, *args, **kwargs)
 
 
+@method_decorator(login_required, name='get')
 class MyAd(TemplateView):
     template_name = 'world/ad.html'
 

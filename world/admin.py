@@ -10,7 +10,7 @@ make_active.short_description = "Опубликовать выбранные о�
 
 
 class ImageAdmin(admin.ModelAdmin):
-    list_display = ['active', 'type', 'date', 'description', 'contacts', 'email']
+    list_display = ['active', 'image_file', 'type', 'date', 'description', 'contacts', 'email']
     fields = ['active', 'type', 'point', 'date', 'image_url', 'image_file', 'description', 'email', 'radius', 'contacts']
     actions = [make_active]
 

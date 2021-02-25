@@ -66,7 +66,9 @@
         debugger
         if (image.active == "True") {
             marker.bindPopup(
-                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.image_url + "><img src=" + image.image_url + "/></a>"
+                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.image_url + "><img src=" + image.image_url + "/></a>" +
+                "<br>" + image.description + "<br>" + image.contacts
+
             ).openPopup();
         } else {
             marker.bindPopup(

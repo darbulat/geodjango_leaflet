@@ -1,0 +1,72 @@
+{% load crispy_forms_filters %}
+<!DOCTYPE html>
+<html lang="">
+
+  <head>
+    <title>Lost & Found</title>
+      {{ form.media }}
+    <style type="text/css">
+       .wrapper {
+          display: grid;
+          grid-template-columns: 50%;
+          grid-gap: 1px;
+          grid-template-rows: auto;
+        }
+    </style>
+<script src="https://code.jquery.com/jquery-3.4.1.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            {% load crispy_forms_tags %}
+            {% load bootstrap4 %}
+            {% bootstrap_css %}
+            {% bootstrap_javascript %}
+  </head>
+  <body>
+    • <a href="/">Главное</a>
+    • <a href="/search">Искать вещи</a>
+    • <a href="/lost">Вы потеряли</a>
+    • <a href="/found">Вы нашли</a>
+    • <a href="/my"> Ваше объявление</a>
+  <div class="wrapper">
+
+            <form action="" enctype="multipart/form-data" method="post">
+                {% csrf_token %}
+                {{ form|crispy }}
+                <input type="submit" value="Отправить" class="btn btn-success">
+            </form>
+
+  </div>
+  <script>
+      var location_options = {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0
+        };
+
+          var degrees2meters = function(lon,lat) {
+              var x = lon * 20037508.34 / 180;
+              var y = Math.log(Math.tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
+              y = y * 20037508.34 / 180;
+              return [x, y]
+            }
+            //test
+            lon= -77.035974
+            lat = 38.898717
+
+        function success(pos) {
+            debugger
+            var crd = pos.coords;
+            options['default_lon'] = crd.longitude;
+            options['default_lat'] = crd.latitude;
+            options['default_zoom'] = 12;
+            geodjango_multi_point.map.getView().setCenter(degrees2meters(crd.longitude, crd.latitude));
+        }
+
+        function error(err) {
+             console.warn(`ERROR(${err.code}): ${err.message}`);
+        }
+
+        navigator.geolocation.getCurrentPosition(success, error, location_options);
+  </script>
+  </body>
+
+</html>

@@ -18,7 +18,8 @@
     • <a href="/search">Искать вещи</a>
     • <a href="/lost">Вы потеряли</a>
     • <a href="/found">Вы нашли</a>
-    • <a href="/my"> Ваше объявление</a>
+    • <a href="/my">Ваше объявление</a>
+    • <a href="delete">Удалить</a>
     <form method="post">{% csrf_token %}
         {{ form | crispy }}
         <input type="submit" value="Обновить">

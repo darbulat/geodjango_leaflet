@@ -26,6 +26,7 @@ env = environ.Env(
     RECEIVER_EMAIL=(str, ''),
     EMAIL_PASSWORD=(str, ''),
     OPENCAGE_KEY=(str, ''),
+    SITE=(str, 'http://127.0.0.1:8000')
 )
 # reading .env file
 environ.Env.read_env()
@@ -151,3 +152,4 @@ OPENCAGE_KEY = env('OPENCAGE_KEY')
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 IS_SEND_EMAIL = int(os.environ.get("IS_SEND_EMAIL", 0))
+SITE = env('SITE')
