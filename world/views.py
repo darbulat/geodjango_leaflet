@@ -285,29 +285,35 @@ class ImageIntersect(View):
     def get(self, request, *args, **kwargs):
         message = "Здесь будут найденные вещи, которые вы могли потерять"
         image_id = kwargs.get('pk')
-        lost_obj = Image.objects.get(pk=image_id)
-        radius = lost_obj.radius
-        lost_points = list(
-            dict(x=point.x, y=point.y) for point in lost_obj.point)
-        fields = ['point', 'date', 'image_url', 'contacts', 'description',
-                  'type', 'active']
-        found_images = lost_obj.get_intersected_objects(fields=fields)
-        not_active_image_count = 0
-        for image in found_images:
-            if not image.get('active'):
-                not_active_image_count += 1
-            image.update(
-                x=image.get('point')[0].x,
-                y=image.get('point')[0].y,
-                date=str(image.get('date')),
-                active=str(image.get('active'))
-            )
-            del image['point']
+        lost_obj = Image.objects.filter(pk=image_id).first()
+        found_images = []
+        radius = 50
+        lost_points = []
+        if not lost_obj:
+            message = "Объявление не найдено"
+        else:
+            radius = lost_obj.radius
+            lost_points = list(
+                dict(x=point.x, y=point.y) for point in lost_obj.point)
+            fields = ['point', 'date', 'image_url', 'contacts', 'description',
+                      'type', 'active']
+            found_images = lost_obj.get_intersected_objects(fields=fields)
+            not_active_image_count = 0
+            for image in found_images:
+                if not image.get('active'):
+                    not_active_image_count += 1
+                image.update(
+                    x=image.get('point')[0].x,
+                    y=image.get('point')[0].y,
+                    date=str(image.get('date')),
+                    active=str(image.get('active'))
+                )
+                del image['point']
 
-        if found_images:
-            image_count = len(found_images)
-            message = get_message(image_count)
-            message = message + f'из них на модерации: {not_active_image_count}'
+            if found_images:
+                image_count = len(found_images)
+                message = get_message(image_count)
+                message = message + f'из них на модерации: {not_active_image_count}'
         context = {
             "message": message,
             "found_images": found_images,
