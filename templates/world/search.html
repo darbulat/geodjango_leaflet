@@ -51,9 +51,11 @@
     var markerGroup = L.layerGroup().addTo(map);
 
     map.on('click', function(e){
-        L.marker(e.latlng).addTo(markerGroup);
-        points.push([e.latlng.lng, e.latlng.lat])
-        document.getElementById('points').value = JSON.stringify(points)
+        if (points.length < 5){
+            L.marker(e.latlng).addTo(markerGroup);
+            points.push([e.latlng.lng, e.latlng.lat])
+            document.getElementById('points').value = JSON.stringify(points)
+        }
     });
     var control = L.Control.openCageSearch(options).addTo(map);
 
@@ -67,7 +69,7 @@
         if (image.active == "True") {
             debugger
             marker.bindPopup(
-                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.image_url + "><img src=" + image.image_url + "/></a>" +
+                "<a target=\"_blank\" rel=\"noopener noreferrer\" href=" + image.image_url + "><img src=" + image.image_url + "></img></a>" +
                 "<br>" + image.description + "<br>" + image.contacts
 
             ).openPopup();

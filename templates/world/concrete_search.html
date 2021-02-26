@@ -48,7 +48,12 @@
             iconAnchor:   [10, 4],
             popupAnchor:  [0, 0]
         });
-        var found_images = {{ found_images | safe }}
+        var miniIconNew = L.icon({
+            iconUrl: '../media/new_point.png',
+            iconSize:     [8, 8],
+            iconAnchor:   [10, 4],
+            popupAnchor:  [0, 0]
+        });        var found_images = {{ found_images | safe }}
         var new_images = {{ new_images | safe }}
         var lost_points = {{ lost_points | safe }}
         var radius = {{ radius | safe }}
@@ -82,7 +87,7 @@
             }
         }
         for (image of new_images) {
-            marker = L.marker([image.y, image.x], {icon: miniIcon}).addTo(map);
+            marker = L.marker([image.y, image.x], {icon: miniIconNew}).addTo(map);
             debugger
             if (image.active === "True") {
                 marker.bindPopup(

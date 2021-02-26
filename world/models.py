@@ -9,7 +9,6 @@ from django.contrib.gis.db import models
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
 from django.core.files import File
-from django.db.models import Q
 from django.utils import timezone
 
 import uuid

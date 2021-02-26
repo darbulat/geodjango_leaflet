@@ -31,6 +31,8 @@
             <form action="" enctype="multipart/form-data" method="post">
                 {% csrf_token %}
                 {{ form|crispy }}
+                {{ form.captcha.errors }}
+                {{ form.point.errors }}
                 <input type="submit" value="Отправить" class="btn btn-success">
             </form>
 
@@ -48,9 +50,6 @@
               y = y * 20037508.34 / 180;
               return [x, y]
             }
-            //test
-            lon= -77.035974
-            lat = 38.898717
 
         function success(pos) {
             debugger

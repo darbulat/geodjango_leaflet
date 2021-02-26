@@ -56,7 +56,11 @@ class BulkUpload(View):
                             type=FOUND,
                             email=email,
                         )
-                        image.save()
+                        try:
+                            image.save()
+                        except UnicodeEncodeError:
+                            return HttpResponseBadRequest(
+                                "Название файла должно быть на латинице")
                         counter_of_new_objects += 1
                     except ValueError:
                         pass
@@ -174,9 +178,17 @@ def send_found_object(request):
                 email=email,
                 type=obj_type,
             )
-
-            obj.save()
-
+            try:
+                obj.save()
+            except UnicodeEncodeError:
+                return HttpResponseBadRequest(
+                    "Название файла должно быть на латинице"
+                )
+            except IntegrityError:
+                return HttpResponseBadRequest(
+                    "Координаты в точности совпадают с ранее введенной "
+                    "координатой, поменяйте координаты и повторите снова"
+                )
             if IS_SEND_EMAIL:
                 body = f"UUID объекта: {obj.id}"
                 send_email(subject='Найден новый объект',
@@ -189,9 +201,7 @@ def send_found_object(request):
                         "спасибо за бдительность!"
             )
         else:
-            return HttpResponseBadRequest(
-                "Необходимо указать координаты"
-            )
+            return render(request, "world/send_found.html", {"form": form})
 
     else:
         form = FoundObjectForm()
@@ -225,8 +235,17 @@ def send_lost_object(request):
                           radius=radius)
 
             obj = Image(**kwargs)
-            obj.save()
-
+            try:
+                obj.save()
+            except UnicodeEncodeError:
+                return HttpResponseBadRequest(
+                    "Название файла должно быть на латинице"
+                )
+            except IntegrityError:
+                return HttpResponseBadRequest(
+                    "Координаты в точности совпадают с ранее введенной "
+                    "координатой, поменяйте координаты и повторите снова"
+                )
             send_email(
                 subject='Ваше объявление скоро будет добавлено',
                 body=f'Ссылка на личный кабинет: <a href="{settings.SITE}/{obj.id}">{obj.id}</a>',
@@ -247,9 +266,7 @@ def send_lost_object(request):
                         f"По <a href='/{obj.id}'>этой ссылке</a> доступно ваше объявление"
             )
         else:
-            return HttpResponseBadRequest(
-                "Необходимо указать координаты"
-            )
+            return render(request, "world/send_found.html", {"form": form})
 
     else:
         form = LostObjectForm()

@@ -5,11 +5,15 @@ from world.models import Image
 
 
 class FoundObjectForm(forms.ModelForm):
-    captcha = CaptchaField()
+    captcha = CaptchaField(
+        error_messages={"invalid": "Неправильно введена капча"},
+        label='Капча',
+    )
     point = forms.PointField(
         widget=forms.OSMWidget(
             attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}
         ),
+        error_messages={"required": "Не указаны координаты"},
         label='Координаты',
     )
 
@@ -25,11 +29,15 @@ class FoundObjectForm(forms.ModelForm):
 
 
 class LostObjectForm(forms.ModelForm):
-    captcha = CaptchaField()
+    captcha = CaptchaField(
+        error_messages={"invalid": "Неправильно введена капча"},
+        label='Капча',
+    )
     multi_point = forms.MultiPointField(
         widget=forms.OSMWidget(
             attrs={'default_lat': 55.786612514494706, 'default_lon': 49.129486083984375, 'map_srid': 4326}
         ),
+        error_messages={"required": "Не указаны координаты"},
         label='Координаты',
     )
 
