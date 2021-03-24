@@ -39,8 +39,11 @@ class Image(AbstractUUID):
         attrs={'map_srid': 4326}
     )
     date = models.DateField(verbose_name='Дата', default=timezone.now)
+
+    _date_path = datetime.date.today().strftime("%Y/%m/%d")
+
     image_file = models.ImageField(null=True, blank=True,
-                                   upload_to='lost_and_found',
+                                   upload_to=_date_path,
                                    verbose_name='Изображение')
     image_url = models.URLField(null=True)
     contacts = models.CharField(max_length=200, verbose_name='Контакты',
