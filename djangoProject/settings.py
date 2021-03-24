@@ -154,3 +154,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 IS_SEND_EMAIL = int(os.environ.get("IS_SEND_EMAIL", 0))
 SITE = env('SITE')
 LOGIN_URL = '/admin/'
+
+CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
+CAPTCHA_LETTER_ROTATION = None
+CAPTCHA_NOISE_FUNCTIONS = ('captcha.helpers.noise_null', )
