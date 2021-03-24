@@ -199,6 +199,7 @@ def send_found_object(request):
             return HttpResponse(
                 content="Ваше сообщение отправлено администраторам, "
                         "спасибо за бдительность!"
+                        f'Ссылка на личный кабинет: <a href="{settings.SITE}/{obj.id}">{obj.id}</a>'
             )
         else:
             return render(request, "world/send_found.html", {"form": form})
