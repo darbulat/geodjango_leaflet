@@ -29,6 +29,10 @@ class FoundObjectForm(forms.ModelForm):
 
 
 class LostObjectForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(LostObjectForm, self).__init__(*args, **kwargs)
+        self.fields['radius'].disabled = True
+
     captcha = CaptchaField(
         error_messages={"invalid": "Неправильно введена капча"},
         label='Капча',
