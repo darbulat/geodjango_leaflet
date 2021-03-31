@@ -10,6 +10,7 @@ from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
 from django.core.files import File
 from django.utils import timezone
+from PIL import Image as PILImage
 
 import uuid
 
@@ -39,8 +40,11 @@ class Image(AbstractUUID):
         attrs={'map_srid': 4326}
     )
     date = models.DateField(verbose_name='Дата', default=timezone.now)
+
+    _date_path = datetime.date.today().strftime("%Y/%m/%d")
+
     image_file = models.ImageField(null=True, blank=True,
-                                   upload_to='lost_and_found',
+                                   upload_to=_date_path,
                                    verbose_name='Изображение')
     image_url = models.URLField(null=True)
     contacts = models.CharField(max_length=200, verbose_name='Контакты',
@@ -65,9 +69,13 @@ class Image(AbstractUUID):
             filename = os.path.basename(self.image_url)
             self.image_file.save(filename, File(img_temp))
         super(Image, self).save(*args, **kwargs)
+        compressed = PILImage.open(self.image_file.path)
+        compressed.save(self.image_file.path, quality=20, optimize=True)
         if self.image_file:
             self.image_url = self.image_file.url
             super(Image, self).save(*args, **kwargs)
+            compressed = PILImage.open(self.image_file.path)
+            compressed.save(self.image_file.path, quality=20, optimize=True)
 
     @classmethod
     def get_objects(cls,
