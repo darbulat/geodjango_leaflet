@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'bootstrap4',
     'crispy_forms',
     'captcha',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [

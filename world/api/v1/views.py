@@ -13,8 +13,8 @@ class ImageViewSet(viewsets.ModelViewSet):
     """
     queryset = Image.objects.all().order_by('-date')
     serializer_class = ImageSerializer
-    permission_classes = [permissions.AllowAny]
-    distance_filter_field = 'point'
+    permission_classes = [permissions.IsAdminUser]
+    distance_ordering_filter_field = 'point'
     filterset_fields = {
         'type': ['exact'],
         'date': ['gte', 'lte', 'exact', 'gt', 'lt'],
