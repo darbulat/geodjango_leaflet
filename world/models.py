@@ -6,9 +6,11 @@ from urllib.request import urlopen
 
 from django.contrib.gis import forms
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
 from django.core.files import File
+from django.db.models import F
 from django.utils import timezone
 from PIL import Image as PILImage
 
@@ -56,8 +58,12 @@ class Image(AbstractUUID):
     active = models.BooleanField(default=False)
     email = models.EmailField(null=True, blank=True, default='')
     radius = models.FloatField(null=False, blank=False, default=50)
+    intersected_objects = models.ManyToManyField(
+        'self', blank=True, through='LostFound', symmetrical=True
+    )
 
     def save(self, *args, **kwargs):
+        kwargs = {}
         if not self.image_url and not self.image_file:
             self.image_url = settings.SITE + '/media/blank_image.png'
         if self.image_url and not self.image_file:
@@ -73,9 +79,11 @@ class Image(AbstractUUID):
         compressed.save(self.image_file.path, quality=20, optimize=True)
         if self.image_file:
             self.image_url = self.image_file.url
-            super(Image, self).save(*args, **kwargs)
             compressed = PILImage.open(self.image_file.path)
             compressed.save(self.image_file.path, quality=20, optimize=True)
+        intersected_images = self.get_intersected_objects()
+        self.intersected_objects.add(*intersected_images)
+        super(Image, self).save(*args, **kwargs)
 
     @classmethod
     def get_objects(cls,
@@ -104,17 +112,18 @@ class Image(AbstractUUID):
     def get_intersected_objects(self, active: bool = None,
                                 fields: list = (),
                                 seen: bool = False) -> Union[Tuple[Any, Any], list]:
-        query = dict(
-            point__distance_lte=(self.point, D(m=self.radius)),
-        )
+        query = dict()
         yesterday = datetime.datetime.now() - datetime.timedelta(days=1)
         if self.type == LOST:
-            query.update(type=FOUND, date__gte=self.date)
+            query.update(point__distance_lte=(self.point, D(m=self.radius)),
+                         type=FOUND, date__gte=self.date)
             intersected_images = LostFound.objects.filter(
                 lost_id=self.pk, seen__lte=yesterday, seen__isnull=False
             ).values_list('found_id', flat=True)
         else:
-            query.update(type=LOST)
+            query.update(distance__lte=F('radius'),
+                         type=LOST,
+                         date__lte=self.date)
             intersected_images = LostFound.objects.filter(
                 found_id=self.pk,
                 seen__lte=yesterday
@@ -122,19 +131,26 @@ class Image(AbstractUUID):
         if active is not None:
             query.update(active=active)
         if seen:
-            new_images = Image.objects.filter(
+            new_images = Image.objects.annotate(
+                distance=Distance('point', self.point)
+            ).filter(
                 **query
             ).exclude(
                 id__in=intersected_images
             ).order_by('date').values(*fields)
-            images = Image.objects.filter(
+            images = Image.objects.annotate(
+                distance=Distance('point', self.point)
+            ).filter(
                 id__in=intersected_images,
                 **query
             ).order_by('date').values(*fields)
             return list(images), list(new_images)
         else:
-            images = Image.objects.filter(
-                **query).order_by('date').values(*fields)
+            images = Image.objects.annotate(
+                distance=Distance('point', self.point)
+            ).filter(**query).order_by('date')
+            if fields:
+                images = images.values(*fields)
             return list(images)
 
 

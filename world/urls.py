@@ -1,8 +1,9 @@
-from django.urls import path
+from django.urls import path, include
 
 from world import views
 
 urlpatterns = [
+    path('api/', include('world.api.urls')),
     path('upload/', views.BulkUpload.as_view(), name='upload'),
     path('found/', views.send_found_object, name='found'),
     path('lost/', views.send_lost_object, name='lost'),
