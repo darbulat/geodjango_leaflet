@@ -17,6 +17,6 @@ class ImageViewSet(viewsets.ModelViewSet):
     distance_ordering_filter_field = 'point'
     filterset_fields = {
         'type': ['exact'],
-        'date': ['gte', 'lte', 'exact', 'gt', 'lt'],
+        'date': ['gte', 'lte', 'exact'],
     }
     filter_backends = (DistanceToPointOrderingFilter, DjangoFilterBackend)

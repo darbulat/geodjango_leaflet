@@ -1,22 +1,16 @@
 import datetime
-import os
-from tempfile import NamedTemporaryFile
 from typing import Tuple, Dict, List, Any, Union
-from urllib.request import urlopen
 
 from django.contrib.gis import forms
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
-from django.core.files import File
 from django.db.models import F
 from django.utils import timezone
 from PIL import Image as PILImage
 
 import uuid
-
-from djangoProject import settings
 
 LOST = 'lost'
 FOUND = 'found'
@@ -41,7 +35,7 @@ class Image(AbstractUUID):
     point.form_class.widget = forms.OSMWidget(
         attrs={'map_srid': 4326}
     )
-    date = models.DateField(verbose_name='Дата', default=timezone.now)
+    date = models.DateField(verbose_name='Дата', default=timezone.now().date())
 
     _date_path = datetime.date.today().strftime("%Y/%m/%d")
 
@@ -55,7 +49,7 @@ class Image(AbstractUUID):
                                    verbose_name='Описание', default='')
     type = models.CharField(null=False, blank=False, max_length=10, default='',
                             choices=CHOICES)
-    active = models.BooleanField(default=False)
+    active = models.BooleanField(default=True)
     email = models.EmailField(null=True, blank=True, default='')
     radius = models.FloatField(null=False, blank=False, default=50)
     intersected_objects = models.ManyToManyField(
@@ -64,25 +58,14 @@ class Image(AbstractUUID):
 
     def save(self, *args, **kwargs):
         kwargs = {}
-        if not self.image_url and not self.image_file:
-            self.image_url = settings.SITE + '/media/blank_image.png'
-        if self.image_url and not self.image_file:
-            if self.image_url.startswith('/media'):
-                self.image_url = settings.SITE + self.image_url
-            img_temp = NamedTemporaryFile(delete=True)
-            img_temp.write(urlopen(self.image_url).read())
-            img_temp.flush()
-            filename = os.path.basename(self.image_url)
-            self.image_file.save(filename, File(img_temp))
-        super(Image, self).save(*args, **kwargs)
-        compressed = PILImage.open(self.image_file.path)
-        compressed.save(self.image_file.path, quality=20, optimize=True)
         if self.image_file:
+            super(Image, self).save(*args, **kwargs)
             self.image_url = self.image_file.url
             compressed = PILImage.open(self.image_file.path)
             compressed.save(self.image_file.path, quality=20, optimize=True)
-        intersected_images = self.get_intersected_objects()
-        self.intersected_objects.add(*intersected_images)
+        if self.point:
+            intersected_images = self.get_intersected_objects()
+            self.intersected_objects.add(*intersected_images)
         super(Image, self).save(*args, **kwargs)
 
     @classmethod
