@@ -1,0 +1,363 @@
+openapi: 3.0.0
+info:
+  title: Lost & Found API
+  description: 'https://loforoll.com/api/v1/'
+  termsOfService: 'https://www.google.com/policies/terms/'
+  contact:
+    email: tlofo2021@gmail.com
+  license:
+    name: BSD License
+  version: v1-oas3
+security:
+  - basicAuth: []
+paths:
+  /objects/:
+    get:
+      security:
+        - basicAuth: []
+      operationId: objects_list
+      description: API endpoint that allows Images to be viewed as list.
+      parameters:
+        - name: type
+          in: query
+          description: 'Object type: lost or found'
+          required: false
+          schema:
+            $ref: '#/components/schemas/ImageType'
+        - name: date__gte
+          in: query
+          description: 'Date greater-than-or-equal'
+          required: false
+          schema:
+            type: string
+        - name: date__lte
+          in: query
+          description: 'Date less-than-or-equal'
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of results to return per page.
+          required: false
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: The initial index from which to return the results.
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                required:
+                  - count
+                  - results
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  next:
+                    type: string
+                    format: uri
+                    nullable: true
+                  previous:
+                    type: string
+                    format: uri
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Image'
+      tags:
+        - objects
+    post:
+      security:
+        - basicAuth: []
+      operationId: objects_create
+      description: API endpoint that allows Images to be viewed or edited.
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                point:
+                  $ref: '#/components/schemas/PointWKT'
+                date:
+                  description: '2021-05-14'
+                  type: string
+                  format: date
+                  example: '2021-05-14'
+                  default: '2021-05-14'
+                image_file:
+                  description: Image of object in image format (jpg, png...).
+                  format: binary
+                  type: string
+                  x-nullable: true
+                contacts:
+                  description: 8(800)200-00-00
+                  example: 8(800)200-00-00
+                  default: 8(800)200-00-00
+                  type: string
+                  maxLength: 200
+                  x-nullable: true
+                description:
+                  type: string
+                  description: Descritpion of object
+                  x-nullable: true
+                type:
+                  $ref: '#/components/schemas/ImageType'
+                email:
+                  type: string
+                  format: email
+                  default: test@mail.ru
+                  minLength: 1
+                radius:
+                  type: number
+                  description: Radius in meters
+                  default: 50
+              required:
+                - type
+                - email
+      responses:
+        '201':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+      tags:
+        - objects
+    parameters: []
+  '/objects/{id}/':
+    get:
+      security:
+        - basicAuth: []
+      operationId: objects_read
+      description: API endpoint that allows Images to be viewed or edited.
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+      tags:
+        - objects
+    put:
+      security:
+        - basicAuth: []
+      operationId: objects_update
+      description: API endpoint that allows Images to be viewed or edited.
+      requestBody:
+        $ref: '#/components/requestBodies/objects_update'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+      tags:
+        - objects
+    patch:
+      security:
+        - basicAuth: []
+      operationId: objects_partial_update
+      description: API endpoint that allows Images to be viewed or edited.
+      requestBody:
+        $ref: '#/components/requestBodies/objects_update'
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+      tags:
+        - objects
+    delete:
+      security:
+        - basicAuth: []
+      operationId: objects_delete
+      description: API endpoint that allows Images to be viewed or edited.
+      responses:
+        '204':
+          description: ''
+      tags:
+        - objects
+    parameters:
+      - name: id
+        in: path
+        description: A UUID string identifying this image.
+        required: true
+        schema:
+          type: string
+          format: uuid
+servers:
+  - url: 'https://loforoll.com/api/v1'
+components:
+  requestBodies:
+    objects_update:
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              point:
+                type: string
+                x-nullable: true
+              date:
+                type: string
+                format: date
+              image_file:
+                type: string
+                format: binary
+                x-nullable: true
+              contacts:
+                type: string
+                maxLength: 200
+                x-nullable: true
+              description:
+                type: string
+                x-nullable: true
+              type:
+                type: string
+                minLength: 1
+              email:
+                type: string
+                format: email
+                minLength: 1
+              radius:
+                type: number
+            required:
+              - type
+              - email
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic  
+  schemas:
+    PointWKT:
+      type: string
+      description: MultiPoint geometry in WKT format - MULTIPOINT ((10 40), (40 30), (20 20))
+      example: MULTIPOINT ((10 40), (40 30), (20 20))
+      default: MULTIPOINT ((10 40), (40 30), (20 20))
+    PointGeoJson:
+      type: string
+      description: MultiPoint geometry in GeoJson format
+      example:  {type: "MultiPoint", coordinates: [[48.78753662109375, 55.73406960018026]]}
+      default:  {type: "MultiPoint", coordinates: [[48.78753662109375, 55.73406960018026]]}
+    ImageType:
+      type: string
+      description: Type of object lost or found
+      enum:
+        - lost
+        - found
+    Image:
+      required:
+        - type
+        - email
+      type: object
+      properties:
+        url:
+          title: Url
+          type: string
+          format: uri
+          readOnly: true
+        point:
+          $ref: '#/components/schemas/PointGeoJson'
+        date:
+          title: Дата
+          type: string
+          format: date
+        image_file:
+          title: Изображение
+          type: string
+          readOnly: true
+          format: uri
+          nullable: true
+        contacts:
+          title: Контакты
+          type: string
+          maxLength: 200
+          nullable: true
+        description:
+          title: Описание
+          type: string
+          nullable: true
+        type:
+          $ref: '#/components/schemas/ImageType'
+        email:
+          title: Email
+          type: string
+          format: email
+          minLength: 1
+        radius:
+          title: Radius
+          type: number
+        intersected_objects:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                title: Url
+                type: string
+                format: uri
+                readOnly: true
+              point:
+                $ref: '#/components/schemas/PointGeoJson'
+              date:
+                title: Дата
+                type: string
+                format: date
+              image_file:
+                title: Изображение
+                type: string
+                readOnly: true
+                format: uri
+                nullable: true
+              image_url:
+                title: Image url
+                type: string
+                format: uri
+                maxLength: 200
+                minLength: 1
+                nullable: true
+              contacts:
+                title: Контакты
+                type: string
+                maxLength: 200
+                nullable: true
+              description:
+                title: Описание
+                type: string
+                nullable: true
+              type:
+                $ref: '#/components/schemas/ImageType'
+              active:
+                title: Active
+                type: boolean
+              email:
+                title: Email
+                type: string
+                format: email
+                maxLength: 254
+                nullable: true
+              radius:
+                title: Radius
+                type: number
+              intersected_objects:
+                type: array
+                items:
+                  type: string
+                  format: uri
+                readOnly: true
+                uniqueItems: true
+          readOnly: true

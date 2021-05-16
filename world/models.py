@@ -7,10 +7,15 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
 from django.db.models import F
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 from PIL import Image as PILImage
 
 import uuid
+
+from djangoProject.settings import SENDER_EMAIL, EMAIL_PASSWORD
+from world.notifications import send_email
 
 LOST = 'lost'
 FOUND = 'found'
@@ -145,3 +150,15 @@ class LostFound(models.Model):
 
     class Meta:
         unique_together = (("lost", "found"),)
+
+
+@receiver(post_save, sender=Image, dispatch_uid="send_notification")
+def send_notification(sender, instance, **kwargs):
+    if kwargs.get('created'):
+        send_email(
+            subject='Ваше объявление добавлено',
+            body=f'UUID для входа в личный кабинет объялвления: {instance.id}</a>',
+            sender_email=SENDER_EMAIL,
+            receiver_email=instance.email,
+            password=EMAIL_PASSWORD,
+        )

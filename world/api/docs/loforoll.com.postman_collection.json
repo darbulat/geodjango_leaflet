@@ -1,0 +1,183 @@
+{
+	"info": {
+		"_postman_id": "8ff1d10e-8f6e-42f2-abed-6b272924ed80",
+		"name": "loforoll.com",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "loforoll.com",
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "innopolis",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "date",
+							"value": "2021-05-10",
+							"type": "text"
+						},
+						{
+							"key": "point",
+							"value": "MULTIPOINT(49.75539374305176 55.75963073789916)",
+							"type": "text"
+						},
+						{
+							"key": "type",
+							"value": "lost",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "asdf@adf.ru",
+							"type": "text"
+						},
+						{
+							"key": "image_file",
+							"type": "file",
+							"src": "/home/bulat/Downloads/image3.jpeg"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://loforoll.com/api/v1/objects/",
+					"protocol": "https",
+					"host": [
+						"loforoll",
+						"com"
+					],
+					"path": [
+						"api",
+						"v1",
+						"objects",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "loforoll.com list",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "innopolis",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "admin",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": []
+				},
+				"url": {
+					"raw": "https://loforoll.com/api/v1/objects/?point=49.745393743,55.749530737&date__lte=2021-03-15&date__gte=2020-01-01&type=lost&format=json",
+					"protocol": "https",
+					"host": [
+						"loforoll",
+						"com"
+					],
+					"path": [
+						"api",
+						"v1",
+						"objects",
+						""
+					],
+					"query": [
+						{
+							"key": "point",
+							"value": "49.745393743,55.749530737"
+						},
+						{
+							"key": "date__lte",
+							"value": "2021-03-15"
+						},
+						{
+							"key": "date__gte",
+							"value": "2020-01-01"
+						},
+						{
+							"key": "type",
+							"value": "lost"
+						},
+						{
+							"key": "format",
+							"value": "json"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "password",
+				"value": "innopolis",
+				"type": "string"
+			},
+			{
+				"key": "username",
+				"value": "admin",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "url",
+			"value": "http://127.0.0.1:8000"
+		}
+	]
+}
