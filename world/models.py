@@ -157,7 +157,7 @@ def send_notification(sender, instance, **kwargs):
     if kwargs.get('created'):
         send_email(
             subject='Ваше объявление добавлено',
-            body=f'UUID для входа в личный кабинет объялвления: {instance.id}</a>',
+            body=f'UUID для входа в личный кабинет объявления: {instance.id}</a>',
             sender_email=SENDER_EMAIL,
             receiver_email=instance.email,
             password=EMAIL_PASSWORD,
