@@ -14,7 +14,7 @@ from PIL import Image as PILImage
 
 import uuid
 
-from djangoProject.settings import SENDER_EMAIL, EMAIL_PASSWORD
+from djangoProject.settings import SENDER_EMAIL, EMAIL_PASSWORD, FRONTEND_SITE
 from world.notifications import send_email
 
 LOST = 'lost'
@@ -157,7 +157,7 @@ def send_notification(sender, instance, **kwargs):
     if kwargs.get('created'):
         send_email(
             subject='Ваше объявление добавлено',
-            body=f'UUID для входа в личный кабинет объявления: {instance.id}</a>',
+            body=f'Для входа в личный кабинет объявления нажмите <a href="{FRONTEND_SITE}/found/advertisement/?ad-uuid={instance.id}">сюда</a>',
             sender_email=SENDER_EMAIL,
             receiver_email=instance.email,
             password=EMAIL_PASSWORD,

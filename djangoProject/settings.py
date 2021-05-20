@@ -173,6 +173,7 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 IS_SEND_EMAIL = int(os.environ.get("IS_SEND_EMAIL", 0))
 SITE = env('SITE')
+FRONTEND_SITE = env('FRONTEND_SITE')
 LOGIN_URL = '/admin/'
 
 CAPTCHA_CHALLENGE_FUNCT = 'captcha.helpers.math_challenge'
