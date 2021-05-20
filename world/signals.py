@@ -11,8 +11,8 @@ def send_email_notification(sender, instance, **kwargs):
     if instance.type == FOUND:
         for lost in instance.intersected_objects.all():
             send_email(
-                subject='Найдены новые вещи',
-                body=f'Найдены вещи соответсвующие <a href="{settings.SITE}/{lost.pk}">вашему объявлению</a>',
+                subject='Найдены новые объекты соответсвующие Вашему объявлению',
+                body=f'Для входа в личный кабинет объявления нажмите <a href="{settings.FRONTEND_SITE}/found/advertisement/?ad-uuid={instance.id}">сюда</a>',
                 sender_email=settings.SENDER_EMAIL,
                 receiver_email=lost.email,
                 password=settings.EMAIL_PASSWORD,
