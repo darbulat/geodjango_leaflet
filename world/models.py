@@ -7,15 +7,10 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import MultiPoint
 from django.contrib.gis.measure import D
 from django.db.models import F
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.utils import timezone
 from PIL import Image as PILImage
 
 import uuid
-
-from djangoProject.settings import SENDER_EMAIL, EMAIL_PASSWORD, FRONTEND_SITE
-from world.notifications import send_email
 
 LOST = 'lost'
 FOUND = 'found'
@@ -68,10 +63,13 @@ class Image(AbstractUUID):
             self.image_url = self.image_file.url
             compressed = PILImage.open(self.image_file.path)
             compressed.save(self.image_file.path, quality=20, optimize=True)
+        super(Image, self).save(*args, **kwargs)
         if self.point:
             intersected_images = self.get_intersected_objects()
-            self.intersected_objects.add(*intersected_images)
-        super(Image, self).save(*args, **kwargs)
+            self.intersected_objects.add(
+                *intersected_images,
+                through_defaults={'seen': datetime.datetime.utcnow()}
+            )
 
     @classmethod
     def get_objects(cls,
@@ -150,15 +148,3 @@ class LostFound(models.Model):
 
     class Meta:
         unique_together = (("lost", "found"),)
-
-
-@receiver(post_save, sender=Image, dispatch_uid="send_notification")
-def send_notification(sender, instance, **kwargs):
-    if kwargs.get('created'):
-        send_email(
-            subject='Ваше объявление добавлено',
-            body=f'Для входа в личный кабинет объявления нажмите <a href="{FRONTEND_SITE}/found/advertisement/?ad-uuid={instance.id}">сюда</a>',
-            sender_email=SENDER_EMAIL,
-            receiver_email=instance.email,
-            password=EMAIL_PASSWORD,
-        )
